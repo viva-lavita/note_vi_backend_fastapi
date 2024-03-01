@@ -1,7 +1,8 @@
 from typing import Optional
+import uuid
 
 from fastapi import Depends, Request
-from fastapi_users import (BaseUserManager, IntegerIDMixin, exceptions, models,
+from fastapi_users import (BaseUserManager, UUIDIDMixin, exceptions, models,
                            schemas)
 
 from auth.models import User
@@ -9,7 +10,7 @@ from auth.utils import get_user_db
 from src.config import config
 
 
-class UserManager(IntegerIDMixin, BaseUserManager[User, int]):  # TODO: рассмотреть замену на UUIDIDMixin
+class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     """
     Менеджер пользователей.
     Реализует взаимодействие с пользователями.
@@ -54,6 +55,10 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):  # TODO: расс
         safe: bool = False,
         request: Optional[Request] = None,
     ) -> models.UP:
+        """
+        Создание нового пользователя.
+        Переопределили метод create, чтобы присвоить роль по умолчанию.
+        """
         await self.validate_password(user_create.password, user_create)
 
         existing_user = await self.user_db.get_by_email(user_create.email)

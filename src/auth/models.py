@@ -1,7 +1,7 @@
 from datetime import datetime
 from fastapi import Depends
 
-from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTableUUID, SQLAlchemyUserDatabase
+from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTableUUID
 from sqlalchemy import (JSON, TIMESTAMP, Boolean, Column, ForeignKey, Integer,
                         String, Table)
 from sqlalchemy.dialects.postgresql import ENUM
@@ -28,7 +28,7 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     email = Column(String, nullable=False, unique=True)
     username = Column(String, nullable=False, unique=True)
     registered_at = Column(TIMESTAMP, default=datetime.utcnow)
-    role_id = Column(Integer, ForeignKey("role.id"), nullable=False)
+    role_id = Column(String, ForeignKey("role.id"), nullable=False)
     hashed_password: str = Column(String(length=1024), nullable=False)
     is_active: bool = Column(Boolean, default=True, nullable=False)
     is_superuser: bool = Column(Boolean, default=False, nullable=False)
@@ -39,8 +39,8 @@ class RoleCRUD(CRUDBase):
     table = Role
 
 
-async def get_user_db(session: AsyncSession = Depends(get_async_session)):
-    yield SQLAlchemyUserDatabase(session, User)
+# async def get_user_db(session: AsyncSession = Depends(get_async_session)):
+#     yield SQLAlchemyUserDatabase(session, User)
 
 # from typing import Union
 
