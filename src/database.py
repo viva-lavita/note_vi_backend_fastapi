@@ -67,9 +67,9 @@ metadata = MetaData(naming_convention=convention)
 Base: DeclarativeMeta = declarative_base(metadata=metadata)
 
 
-async def create_db_and_tables():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+# async def create_db_and_tables():
+#     async with engine.begin() as conn:
+#         await conn.run_sync(Base.metadata.create_all)
 
 
 # def get_session(function_):

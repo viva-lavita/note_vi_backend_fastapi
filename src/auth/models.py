@@ -2,13 +2,13 @@ from datetime import datetime
 from fastapi import Depends
 
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTableUUID
-from sqlalchemy import (JSON, TIMESTAMP, Boolean, Column, ForeignKey, Integer,
+from sqlalchemy import (JSON, TIMESTAMP, Boolean, Column, ForeignKey,
                         String, Table)
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.constants import Permission
-from src.database import Base, get_async_session
+from src.database import Base
 from src.exceptions import new_uuid
 from src.models import CRUDBase
 
