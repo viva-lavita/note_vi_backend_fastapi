@@ -56,11 +56,34 @@ class CRUDBase:
 
 
 async def get_list(session: AsyncSession, query: Select) -> List[Table]:
+    """
+    Метод позволяет получить список объектов.
+    На вход подаются следующие параметры:
+    session - сессия
+    query - запрос в формате sqlalchemy, например:
+    select(User).where(User.name == 'John')
+    """
     return (await session.execute(query)).scalars().all()
 
 
 async def exactly_one(session: AsyncSession, query) -> Table:
-    """sqlalchemy.exc.NoResultFound, sqlalchemy.exc.MultipleResultFound"""
+    """
+    Получает одно скалярное значение из результата запроса.
+
+    Параметры:
+    session - сессия
+    query - запрос в формате SQLAlchemy, например:
+    session.query(User).filter(User.name == 'John').scalar()
+    Вернет id первого пользователя с именем John
+
+    Возвращает:
+    Скалярное значение из результата запроса.
+
+    Исключения:
+    ObjectNotFoundError - если результат запроса пуст
+    MultipleResultFound - если результат запроса содержит более одного скаляра
+    (столбца, ошибка в запросе)
+    """
     try:
         return (await session.execute(query)).unique().scalars().one()
     except NoResultFound:
@@ -68,6 +91,20 @@ async def exactly_one(session: AsyncSession, query) -> Table:
 
 
 async def get_total_rows(session: AsyncSession, query: Select) -> int:
+    """
+    Метод позволяет получить общее количество элементов.
+
+    Параметры:
+    session - сессия SQLAlchemy
+    query - запрос в формате SQLAlchemy, например:
+    select(User).where(User.name == 'John')
+
+    Возвращает:
+    Общее количество элементов, соответствующих запросу.
+
+    Исключения:
+    Нет
+    """
     return (
         await session.execute(select(func.count())
                               .select_from(query.subquery()))

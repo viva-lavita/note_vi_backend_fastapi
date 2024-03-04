@@ -1,13 +1,19 @@
 from typing import Union
 
 from fastapi import FastAPI
-# from pydantic import BaseModel
 
+from src.config import config, app_configs
 from src.auth.shemas import UserRead
+from src.auth.config import fastapi_users
+from src.auth.router import router_auth, router_users
+
 
 app = FastAPI(
-    title="Note_vi_backend",
+    **app_configs
 )
+
+app.include_router(router_auth)
+app.include_router(router_users)
 
 
 @app.get("/")

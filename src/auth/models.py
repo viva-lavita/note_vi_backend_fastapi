@@ -22,6 +22,11 @@ class Role(Base):
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
+    """
+    Модель пользователя.
+    Если is_active = False, то запросы на вход в систему и
+    "забыли пароль" будут отклонены.
+    """
     __tablename__ = "user"
 
     id = Column(String(36), primary_key=True, default=new_uuid)
