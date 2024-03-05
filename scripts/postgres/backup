@@ -1,5 +1,7 @@
 #!/bin/sh -e
 
+# Создание бэкапа бд
+
 echo "Backup process started."
 
 export POSTGRES_USER="${POSTGRES_USER}"

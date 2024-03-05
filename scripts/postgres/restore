@@ -1,5 +1,7 @@
 #!/bin/sh -e
 
+# Восстановление БД из бэкапа
+
 # The directory where backups are stored
 BACKUP_DIRECTORY="/backups"
 

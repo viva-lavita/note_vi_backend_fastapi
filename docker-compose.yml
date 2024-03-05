@@ -16,6 +16,7 @@ services:
       - "8000:8000"
     depends_on:
       - app_db
+      - redis
     restart: always
 
   app_db:
@@ -30,19 +31,58 @@ services:
       - ./scripts/postgres:/scripts
     ports:
       - "65432:5432"
+  
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    hostname: pgadmin
+    env_file:
+      - .env.dev
+    ports:
+      - 5050:5050
+    depends_on:
+      - app_db
+    restart: always
 
   redis:
     image: redis:6.2-alpine
     hostname: redis
     env_file:
       - .env.dev
-    container_name: redis
+    container_name: redis_app
     command:
       - 'redis-server'
-      # - '--requirepass $REDIS_PASSWORD'
       - '--requirepass myStrongPassword'
     ports:
-      - 36379:6379
+      - 5370:5370
+
+  celery:
+    build:
+      context: .
+    env_file:
+      - .env.dev
+    container_name: celery_app
+    user: "app"
+    command: ["/src/scripts/docker/celery.sh", "celery"]
+    depends_on:
+      - redis
+    restart: always
+  
+  flower:
+    build:
+      context: .
+    env_file:
+      - .env.dev
+    container_name: flower_app
+    user: "app"
+    command: ["/src/scripts/docker/celery.sh", "flower"]
+    depends_on:
+      - redis
+      - celery
+    restart: always
+    ports:
+      - 8888:5555
+
 
 volumes:
   app_pg_data:

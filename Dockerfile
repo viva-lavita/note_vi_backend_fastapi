@@ -37,7 +37,6 @@ ENV PATH "$PATH:/src/scripts"
 
 RUN useradd -m -d /src -s /bin/bash app \
     && chown -R app:app /src/* && chmod +x /src/scripts/*
-# RUN chown -R docker:${APP_USER} /src/ && chmod +x /src/scripts/*
 
 WORKDIR ${APP_ROOT}
 USER app

@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from src.config import config, app_configs
 from src.auth.config import fastapi_users  # не убирать
 from src.auth.router import router_auth, router_roles, router_users
+from src.tasks.router import router_tasks
 
 
 app = FastAPI(
@@ -14,3 +15,4 @@ app = FastAPI(
 app.include_router(router_auth)
 app.include_router(router_users)
 app.include_router(router_roles)
+app.include_router(router_tasks)
