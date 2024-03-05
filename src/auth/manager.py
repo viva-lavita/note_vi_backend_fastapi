@@ -4,8 +4,9 @@ import uuid
 from fastapi import Depends, Request
 from fastapi_users import (BaseUserManager, UUIDIDMixin, exceptions, models,
                            schemas)
+from src.models import get_by_name
 
-from src.auth.models import User
+from src.auth.models import Role, User
 from src.auth.utils import get_user_db
 from src.config import config
 
@@ -72,7 +73,8 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         )
         password = user_dict.pop("password")
         user_dict["hashed_password"] = self.password_helper.hash(password)
-        user_dict["role_name"] = config.ROLE_DEFAULT  # TODO: Пересмотреть роль по умолчанию
+        role_default = await get_by_name(self.user_db.session, Role, config.ROLE_DEFAULT)
+        user_dict["role_id"] = role_default.id  # TODO: Пересмотреть роль по умолчанию
 
         created_user = await self.user_db.create(user_dict)
 

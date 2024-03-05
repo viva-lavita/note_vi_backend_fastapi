@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from src.config import config, app_configs
 from src.auth.shemas import UserRead
 from src.auth.config import fastapi_users
-from src.auth.router import router_auth, router_users
+from src.auth.router import router_auth, router_roles, router_users
 
 
 app = FastAPI(
@@ -14,10 +14,11 @@ app = FastAPI(
 
 app.include_router(router_auth)
 app.include_router(router_users)
+app.include_router(router_roles)
 
 
 @app.get("/")
-async def read_root():
+async def read_root() -> dict[str, str]:
     return {"Hello": "World"}
 
 

@@ -1,4 +1,5 @@
 run:
+  scripts/create_roles.sh
   uvicorn src.main:app --reload
 
 up:

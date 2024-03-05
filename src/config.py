@@ -47,10 +47,18 @@ class LoggerSettings(BaseSettings):
     LOGGER_CONSOLE_LEVEL: str = "INFO"
 
 
+class EmailSettings(BaseSettings):
+    EMAIL_HOST: str
+    EMAIL_PORT: int
+    SMTP_USER: str
+    SMTP_PASSWORD: str
+
+
 settings = [
     PostgresDBSettings,
     AuthSettings,
-    LoggerSettings
+    LoggerSettings,
+    EmailSettings
 ]
 
 

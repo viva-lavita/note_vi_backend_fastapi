@@ -2,7 +2,7 @@ from datetime import datetime
 from fastapi import Depends
 
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTableUUID
-from sqlalchemy import (JSON, TIMESTAMP, Boolean, Column, ForeignKey,
+from sqlalchemy import (JSON, TIMESTAMP, UUID, Boolean, Column, ForeignKey,
                         String, Table)
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +16,7 @@ from src.models import CRUDBase
 class Role(Base):
     __tablename__ = "role"
 
-    id = Column(String(36), primary_key=True, default=new_uuid)
+    id = Column(UUID, primary_key=True, default=new_uuid)
     name = Column(String, nullable=False, unique=True)
     permission = Column(ENUM(Permission), nullable=False)
 
@@ -29,11 +29,11 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     """
     __tablename__ = "user"
 
-    id = Column(String(36), primary_key=True, default=new_uuid)
+    id = Column(UUID, primary_key=True, default=new_uuid)
     email = Column(String, nullable=False, unique=True)
     username = Column(String, nullable=False, unique=True)
     registered_at = Column(TIMESTAMP, default=datetime.utcnow)
-    role_id = Column(String, ForeignKey("role.id"), nullable=False)
+    role_id = Column(UUID, ForeignKey("role.id"), nullable=False)
     hashed_password: str = Column(String(length=1024), nullable=False)
     is_active: bool = Column(Boolean, default=True, nullable=False)
     is_superuser: bool = Column(Boolean, default=False, nullable=False)

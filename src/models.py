@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 from typing import List
 from typing import Type
 from typing import TypeVar
@@ -66,23 +66,22 @@ async def get_list(session: AsyncSession, query: Select) -> List[Table]:
     return (await session.execute(query)).scalars().all()
 
 
-async def exactly_one(session: AsyncSession, query) -> Table:
+async def exactly_one(session: AsyncSession, query) -> Optional[Table]:
     """
     Получает одно скалярное значение из результата запроса.
 
     Параметры:
     session - сессия
     query - запрос в формате SQLAlchemy, например:
-    session.query(User).filter(User.name == 'John').scalar()
-    Вернет id первого пользователя с именем John
+    session.query(User).filter(User.name == 'John')
+    Вернет пользователя с именем John
 
     Возвращает:
-    Скалярное значение из результата запроса.
+    Элемент, соответствующий запросу
 
     Исключения:
     ObjectNotFoundError - если результат запроса пуст
-    MultipleResultFound - если результат запроса содержит более одного скаляра
-    (столбца, ошибка в запросе)
+    MultipleResultFound - если результат запроса содержит более одного элемента
     """
     try:
         return (await session.execute(query)).unique().scalars().one()
@@ -109,3 +108,18 @@ async def get_total_rows(session: AsyncSession, query: Select) -> int:
         await session.execute(select(func.count())
                               .select_from(query.subquery()))
             ).scalars().one()
+
+
+async def get_by_name(
+        session: AsyncSession, table: Type[Table], name: str
+) -> Optional[Table]:
+    return (
+        await session.execute(select(table).where(table.name == name))
+    ).unique().scalars().first()  # TODO: переделать как get_by_id
+
+
+async def get_by_id(
+        session: AsyncSession, table: Type[Table], id: str
+) -> Optional[Table]:
+    query = select(table).where(table.id == id)
+    return await exactly_one(session, query)

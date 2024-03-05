@@ -9,7 +9,7 @@ from typing import AsyncGenerator
 
 from fastapi import Depends
 # from fastapi_users.db import SQLAlchemyUserDatabase
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, NullPool
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -44,11 +44,13 @@ engine = create_async_engine(
     pool_size=10,
 )
 
+# engine = create_async_engine(config.POSTGRES_URI, poolclass=NullPool)
+
 async_session = sessionmaker(
     engine,
     class_=AsyncSession,
     expire_on_commit=False,
-    autoflush=True
+    # autoflush=True
 )
 
 # convention - это набор правил для именования ограничений, связей и т.д.
