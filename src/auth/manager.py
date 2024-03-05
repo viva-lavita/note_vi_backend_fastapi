@@ -1,23 +1,25 @@
 from typing import Optional
+import uuid
 
 from fastapi import Depends, Request
-from fastapi_users import (BaseUserManager, IntegerIDMixin, exceptions, models,
+from fastapi_users import (BaseUserManager, UUIDIDMixin, exceptions, models,
                            schemas)
+from src.models import get_by_name
 
-from auth.models import User
-from auth.utils import get_user_db
+from src.auth.models import Role, User
+from src.auth.utils import get_user_db
 from src.config import config
 
 
-class UserManager(IntegerIDMixin, BaseUserManager[User, int]):  # TODO: рассмотреть замену на UUIDIDMixin
+class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     """
     Менеджер пользователей.
     Реализует взаимодействие с пользователями.
 
     Переопределили метод create, чтобы присвоить роль по умолчанию.
     """
-    reset_password_token_secret = config.SECRET_AUTH
-    verification_token_secret = config.SECRET_AUTH
+    reset_password_token_secret = config.SECRET_AUTH_KEY
+    verification_token_secret = config.SECRET_AUTH_KEY
 
     async def on_after_register(
             self, user: User, request: Optional[Request] = None
@@ -54,6 +56,10 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):  # TODO: расс
         safe: bool = False,
         request: Optional[Request] = None,
     ) -> models.UP:
+        """
+        Создание нового пользователя.
+        Переопределили метод create, чтобы присвоить роль по умолчанию.
+        """
         await self.validate_password(user_create.password, user_create)
 
         existing_user = await self.user_db.get_by_email(user_create.email)
@@ -67,7 +73,8 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):  # TODO: расс
         )
         password = user_dict.pop("password")
         user_dict["hashed_password"] = self.password_helper.hash(password)
-        user_dict["role_name"] = config.ROLE_DEFAULT  # TODO: Пересмотреть роль по умолчанию
+        role_default = await get_by_name(self.user_db.session, Role, config.ROLE_DEFAULT)
+        user_dict["role_id"] = role_default.id  # TODO: Пересмотреть роль по умолчанию
 
         created_user = await self.user_db.create(user_dict)
 

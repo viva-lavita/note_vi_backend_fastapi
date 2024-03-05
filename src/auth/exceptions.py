@@ -1,6 +1,6 @@
 from src.exceptions import BusinessError
 
 
-class AccountNotFoundError(BusinessError):
+class RoleNotFoundError(BusinessError):
     status_code = 404
-    description = "Account is not found"
+    description = "Role is not found"
