@@ -3,12 +3,12 @@ from typing import Any, Optional
 from pydantic import ValidationInfo
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
 from src.constants import Environment
 
 
-load_dotenv()
+# load_dotenv()
 
 
 class PostgresDBSettings(BaseSettings):
@@ -54,11 +54,18 @@ class EmailSettings(BaseSettings):
     SMTP_PASSWORD: str
 
 
+class RedisSettings(BaseSettings):
+    # REDIS_HOST: str
+    # REDIS_PORT: int
+    REDIS_URL: Optional[str] = None
+
+
 settings = [
     PostgresDBSettings,
     AuthSettings,
     LoggerSettings,
-    EmailSettings
+    EmailSettings,
+    RedisSettings
 ]
 
 
@@ -69,8 +76,15 @@ class AppSettings(*settings):
     ENVIRONMENT: Environment = Environment.PRODUCTION
 
     class Config:
-        env_file = ".env"
         case_sensitive = True
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if cls.Config.ENVIRONMENT == Environment.STAGING:
+            cls.Config.env_file = ".env.dev"
+        else:
+            cls.Config.env_file = ".env"
 
 
 config = AppSettings()

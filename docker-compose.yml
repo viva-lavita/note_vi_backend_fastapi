@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: app
+    image: note_vi_image
+    hostname: app
+    env_file:
+      - .env.dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/src
+    ports:
+      - "8000:8000"
+    depends_on:
+      - app_db
+      - redis
+    restart: always
+
+  app_db:
+    container_name: app_db
+    hostname: app_db
+    image: postgres:13.2
+    env_file:
+      - .env.dev
+    volumes:
+      - app_pg_data:/var/lib/postgresql/data
+      - app_pg_data_backups:/backups
+      - ./scripts/postgres:/scripts
+    ports:
+      - "65432:5432"
+  
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    hostname: pgadmin
+    env_file:
+      - .env.dev
+    ports:
+      - 5050:5050
+    depends_on:
+      - app_db
+    restart: always
+
+  redis:
+    image: redis:6.2-alpine
+    hostname: redis
+    env_file:
+      - .env.dev
+    container_name: redis_app
+    command:
+      - 'redis-server'
+      - '--requirepass myStrongPassword'
+    ports:
+      - 5370:5370
+
+  celery:
+    build:
+      context: .
+    env_file:
+      - .env.dev
+    container_name: celery_app
+    user: "app"
+    command: ["/src/scripts/docker/celery.sh", "celery"]
+    depends_on:
+      - redis
+    restart: always
+  
+  flower:
+    build:
+      context: .
+    env_file:
+      - .env.dev
+    container_name: flower_app
+    user: "app"
+    command: ["/src/scripts/docker/celery.sh", "flower"]
+    depends_on:
+      - redis
+      - celery
+    restart: always
+    ports:
+      - 8888:5555
+
+
+volumes:
+  app_pg_data:
+    driver: "local"
+  app_pg_data_backups:
+    driver: "local"
+
+networks:
+  default:
+    external: true
+    name: app_main
