@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi_users import exceptions
+from fastapi_users.router.common import ErrorCode, ErrorModel
 from pydantic import UUID4
-from sqlalchemy import UUID, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.auth.logic import Role
+from src.auth.manager import UserManager, get_user_manager
+from src.auth.config import current_user
+from src.auth.logic import Role, UserTokenVerify
 from src.database import commit, get_async_session, async_session
-from src.models import get_list
 from src.auth.shemas import RoleResponse, UserCreate, UserRead, UserUpdate
 from src.auth.config import auth_backend, fastapi_users
 
@@ -45,3 +47,59 @@ async def delete_role(
     async with async_session() as session:
         async with commit(session) as session:
             await Role.delete(session, role_id)
+
+
+@router_auth.get(
+    "/accept",
+    response_model=UserRead,
+    name="auth:accept",
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "model": ErrorModel,
+            "content": {
+                "application/json": {
+                    "examples": {
+                        ErrorCode.VERIFY_USER_BAD_TOKEN: {
+                            "summary": "Bad token, not existing user or"
+                            "not the e-mail currently set for the user.",
+                            "value": {"detail": ErrorCode.VERIFY_USER_BAD_TOKEN},
+                        },
+                        ErrorCode.VERIFY_USER_ALREADY_VERIFIED: {
+                            "summary": "The user is already verified.",
+                            "value": {
+                                "detail": ErrorCode.VERIFY_USER_ALREADY_VERIFIED
+                            },
+                        },
+                    }
+                }
+            },
+        }
+    },
+)
+async def accept(
+    token: str,
+    request: Request,
+    user_manager:
+    UserManager = Depends(get_user_manager)
+) -> UserRead:
+    async with async_session() as session:
+        async with commit(session) as session:
+            try:
+                user = await user_manager.verify(token, request)
+                await UserTokenVerify.delete(session, user_id=user.id)
+                return user  # TODO: добавить логирование и подходящий вывод
+            except (
+                exceptions.InvalidVerifyToken, exceptions.UserNotExists
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=ErrorCode.VERIFY_USER_BAD_TOKEN,
+                )
+            except exceptions.UserAlreadyVerified:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=ErrorCode.VERIFY_USER_ALREADY_VERIFIED,
+                )
+            except Exception as e:
+                print(e)  # TODO: добавить логирование
+                raise e

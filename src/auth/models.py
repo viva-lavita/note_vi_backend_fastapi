@@ -40,8 +40,22 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     is_verified: bool = Column(Boolean, default=False, nullable=False)
 
 
+class UserTokenVerify(Base):
+    __tablename__ = "user_tokens"
+
+    id = Column(UUID, primary_key=True, default=new_uuid)
+    user_id = Column(UUID,
+                     ForeignKey("user.id", ondelete="CASCADE"),
+                     nullable=False)
+    token_verify = Column(String)
+
+
 class RoleCRUD(CRUDBase):
     table = Role
+
+
+class UserTokenVerifyCRUD(CRUDBase):
+    table = UserTokenVerify
 
 
 # async def get_user_db(session: AsyncSession = Depends(get_async_session)):

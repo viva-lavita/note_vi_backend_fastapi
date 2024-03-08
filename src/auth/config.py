@@ -9,7 +9,8 @@ from src.auth.manager import get_user_manager
 from src.auth.models import User
 
 
-cookie_transport = CookieTransport(cookie_name="fastapi_users", cookie_max_age=3600)
+cookie_transport = CookieTransport(cookie_name="fastapi_users",
+                                   cookie_max_age=3600)
 
 
 def get_jwt_strategy() -> JWTStrategy:

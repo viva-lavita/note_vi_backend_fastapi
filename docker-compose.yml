@@ -10,8 +10,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    # command: ["/note_vi_backend/scripts/create_roles.sh"]  # перезапускается
     volumes:
-      - ./:/src
+      - ./:/note_vi_backend
     ports:
       - "8000:8000"
     depends_on:
@@ -28,7 +29,7 @@ services:
     volumes:
       - app_pg_data:/var/lib/postgresql/data
       - app_pg_data_backups:/backups
-      - ./scripts/postgres:/scripts
+      - /note_vi_backend/scripts/postgres:/scripts
     ports:
       - "65432:5432"
   
@@ -62,8 +63,7 @@ services:
     env_file:
       - .env.dev
     container_name: celery_app
-    user: "app"
-    command: ["/src/scripts/docker/celery.sh", "celery"]
+    command: ["/note_vi_backend/scripts/docker/celery.sh", "celery"]
     depends_on:
       - redis
     restart: always
@@ -74,8 +74,7 @@ services:
     env_file:
       - .env.dev
     container_name: flower_app
-    user: "app"
-    command: ["/src/scripts/docker/celery.sh", "flower"]
+    command: ["/note_vi_backend/scripts/docker/celery.sh", "flower"]
     depends_on:
       - redis
       - celery
