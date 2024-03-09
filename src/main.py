@@ -56,13 +56,3 @@ app.include_router(router_auth)
 app.include_router(router_users)
 app.include_router(router_roles)
 app.include_router(router_tasks)
-
-
-# @app.on_event("startup")
-# async def startup_event():
-#     redis = aioredis.from_url(
-#         config.REDIS_URL,
-#         encoding="utf8",
-#         decode_responses=True
-#     )
-#     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")

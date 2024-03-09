@@ -41,5 +41,4 @@ def get_email_template_verify(
         subtype='html'
     )
 
-    # email.add_related(requests.post, 'text', 'html', cid='verification-link', encoding='utf-8')
     return email

@@ -30,7 +30,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     ):
         """
         Действия после регистрации пользователя.
-        Тут можно дописать отправку письма с подтверждением регистрации.
+        Дописана отправка письма с подтверждением регистрации.
         """
         send_email_register.delay(username=user.username,
                                   user_email=user.email)
@@ -52,6 +52,8 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     ):
         """
         Действия после запроса верификации пользователя.
+        Дописана отправка письма с подтверждением верификации и регистрация
+        временного токена.
         """
         send_email_verify.delay(username=user.username,
                                 user_email=user.email,
@@ -69,7 +71,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     ) -> models.UP:
         """
         Создание нового пользователя.
-        Переопределили метод create, чтобы присвоить роль по умолчанию.
+        Переопределен метод create, чтобы присвоить роль по умолчанию.
         """
         await self.validate_password(user_create.password, user_create)
 

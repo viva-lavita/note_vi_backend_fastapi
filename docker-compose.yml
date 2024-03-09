@@ -10,7 +10,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    # command: ["/note_vi_backend/scripts/create_roles.sh"]  # перезапускается
     volumes:
       - ./:/note_vi_backend
     ports:

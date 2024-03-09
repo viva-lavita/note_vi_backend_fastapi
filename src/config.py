@@ -27,7 +27,6 @@ class PostgresDBSettings(BaseSettings):
     ) -> str:
         if isinstance(v, str):
             return v
-        # Return URL-connect 'postgresql://postgres:password@localhost:5432/invoices'
         return "postgresql+asyncpg://{user}:{password}@{host}:{port}/{db}?async_fallback=True".format(
             user=values.data["POSTGRES_USER"],
             password=values.data["POSTGRES_PASSWORD"],
@@ -74,18 +73,10 @@ class AppSettings(*settings):
     ENV: str
     APP_VERSION: str = "1"
     APP_URL: str
-    ENVIRONMENT: Environment = Environment.PRODUCTION
+    ENVIRONMENT: Environment = Environment.TESTING
 
     class Config:
         case_sensitive = True
-
-    @classmethod
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        if cls.Config.ENVIRONMENT == Environment.STAGING:
-            cls.Config.env_file = ".env.dev"
-        else:
-            cls.Config.env_file = ".env"
 
 
 config = AppSettings()
