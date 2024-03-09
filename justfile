@@ -51,5 +51,5 @@ test *args:
 create network:
     docker network create app_main
 
-# prod create roles:
-#     docker compose exec app scripts/create_roles.sh
+tests:
+    docker compose exec app pytest

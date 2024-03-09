@@ -3,12 +3,12 @@ from typing import Any, Optional
 from pydantic import ValidationInfo
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 
 from src.constants import Environment
 
 
-# load_dotenv()
+load_dotenv()
 
 
 class PostgresDBSettings(BaseSettings):
@@ -27,7 +27,6 @@ class PostgresDBSettings(BaseSettings):
     ) -> str:
         if isinstance(v, str):
             return v
-        # Return URL-connect 'postgresql://postgres:password@localhost:5432/invoices'
         return "postgresql+asyncpg://{user}:{password}@{host}:{port}/{db}?async_fallback=True".format(
             user=values.data["POSTGRES_USER"],
             password=values.data["POSTGRES_PASSWORD"],
@@ -73,25 +72,18 @@ class AppSettings(*settings):
     PROJECT_NAME: str
     ENV: str
     APP_VERSION: str = "1"
-    ENVIRONMENT: Environment = Environment.PRODUCTION
+    APP_URL: str
+    ENVIRONMENT: Environment = Environment.TESTING
 
     class Config:
         case_sensitive = True
-
-    @classmethod
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        if cls.Config.ENVIRONMENT == Environment.STAGING:
-            cls.Config.env_file = ".env.dev"
-        else:
-            cls.Config.env_file = ".env"
 
 
 config = AppSettings()
 
 app_configs: dict[str, Any] = {"title": "Note_vi_backend"}
 if config.ENVIRONMENT.is_deployed:
-    app_configs["root_path"] = f"/v{config.APP_VERSION}"
+    app_configs["root_path"] = f"/api/v{config.APP_VERSION}"
 
 if not config.ENVIRONMENT.is_debug:
     app_configs["openapi_url"] = None

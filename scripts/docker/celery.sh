@@ -1,11 +1,13 @@
 #!/bin/bash
 
-cd src
-cd src
-ls
+
 
 if [[ "${1}" == "celery" ]]; then
-  celery --app=tasks.tasks:celery worker -l INFO
+  mkdir logs
+  cd logs
+  touch celery.log
+  cd ..
+  celery --app=src.tasks.tasks:celery worker -l INFO --logfile=/note_vi_backend/logs/celery.log
 elif [[ "${1}" == "flower" ]]; then
-  celery --app=tasks.tasks:celery flower
+  celery --app=src.tasks.tasks:celery flower
  fi

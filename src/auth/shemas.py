@@ -1,10 +1,14 @@
 from typing import Optional
 
 from fastapi_users import schemas
-from pydantic import UUID4, BaseModel, EmailStr
+from fastapi_users.jwt import JWT_ALGORITHM
+from pydantic import UUID4, BaseModel, EmailStr, validator
+import jwt
+
+from src.config import config
 
 
-class UserRead(schemas.BaseUser[int]):
+class UserRead(schemas.BaseUser[UUID4]):
     """
     Схема для получения пользователя.
     Отсутствует поле с паролем.
@@ -53,3 +57,20 @@ class RoleResponse(BaseModel):
     id: UUID4
     name: str
     permission: str
+
+
+class UserTokenVerifyRequest(BaseModel):
+
+    # @validator('token_verify')
+    # def check_jwt_token(cls, v):
+    #     try:
+    #         token = jwt.decode(v, config.SECRET_AUTH_KEY, algorithms=JWT_ALGORITHM)
+    #         # Уточнить срок времени жизни токена и дописать проверку
+    #     except jwt.ExpiredSignatureError:
+    #         raise ValueError('Token has expired')
+    #     except jwt.InvalidTokenError:
+    #         raise ValueError('Invalid token')
+    #     return v
+
+    class Config:
+        from_attributes = True  # Можно не перечислять поля, если они не меняются

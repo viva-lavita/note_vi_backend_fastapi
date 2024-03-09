@@ -17,4 +17,4 @@ class Environment(str, Enum):
 
     @property
     def is_deployed(self) -> bool:
-        return self in (self.STAGING, self.PRODUCTION)
+        return self not in (self.TESTING)
