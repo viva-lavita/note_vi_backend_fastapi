@@ -81,6 +81,21 @@ services:
     ports:
       - 8888:5555
 
+  test_db:
+    container_name: test_db
+    image: postgres:13.2
+    # volumes:
+    #   - ./tests/test_app_pg_data:/var/lib/postgresql/data
+    expose:
+      - 5433
+    command:
+      - -p 5433
+    environment:
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_DB=test_db
+    ports:
+      - "65433:5433"
 
 volumes:
   app_pg_data:

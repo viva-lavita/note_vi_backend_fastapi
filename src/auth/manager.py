@@ -63,6 +63,16 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         print(f"Verification requested for user {user.id}. "  # TODO: добавить логирование
               f"Verification token: {token}")
 
+    async def on_after_verify(
+        self, user: User, request: Optional[Request] = None
+    ):
+        """
+        Действия после верификации пользователя.
+        """
+        async with commit(self.user_db.session) as session:
+            await UserTokenVerify.delete(session, user_id=user.id)
+        print(f"User {user.id} has been verified.")
+
     async def create(
         self,
         user_create: schemas.UC,

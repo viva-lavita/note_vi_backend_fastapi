@@ -36,6 +36,31 @@ class PostgresDBSettings(BaseSettings):
         )
 
 
+class TestPostgresDBSettings(BaseSettings):
+    POSTGRES_USER_TEST: str = "test"
+    POSTGRES_PASSWORD_TEST: str = "test"
+    POSTGRES_HOST_TEST: str = "test_db"
+    POSTGRES_PORT_TEST: int = 5433
+    POSTGRES_DB_TEST: str = "test_db"
+    POSTGRES_ECHO_TEST: bool = False
+
+    POSTGRES_URI_TEST: Optional[str] = None
+
+    @field_validator("POSTGRES_URI_TEST")
+    def assemble_db_connection_test(
+        cls, v: Optional[str], values: ValidationInfo
+    ) -> str:
+        if isinstance(v, str):
+            return v
+        return "postgresql+asyncpg://{user}:{password}@{host}:{port}/{db}?async_fallback=True".format(
+            user=values.data["POSTGRES_USER_TEST"],
+            password=values.data["POSTGRES_PASSWORD_TEST"],
+            host=values.data["POSTGRES_HOST_TEST"],
+            port=values.data["POSTGRES_PORT_TEST"],
+            db=values.data["POSTGRES_DB_TEST"],
+        )
+
+
 class AuthSettings(BaseSettings):
     SECRET_AUTH_KEY: str
     ROLE_DEFAULT: str = "user"
@@ -61,6 +86,7 @@ class RedisSettings(BaseSettings):
 
 settings = [
     PostgresDBSettings,
+    TestPostgresDBSettings,
     AuthSettings,
     LoggerSettings,
     EmailSettings,

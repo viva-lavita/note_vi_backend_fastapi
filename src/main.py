@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
     yield
-    await redis.close()
+    await redis.aclose()
 
 
 app = FastAPI(

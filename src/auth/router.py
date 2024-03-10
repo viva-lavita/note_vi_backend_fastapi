@@ -42,11 +42,11 @@ async def get_roles(
 
 @router_roles.delete("/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_role(
-    role_id: UUID4
+    role_id: UUID4,
+    session: AsyncSession = Depends(get_async_session),
 ) -> None:
-    async with async_session() as session:
-        async with commit(session) as session:
-            await Role.delete(session, role_id)
+    await Role.delete(session, role_id)
+    await session.commit()
 
 
 @router_auth.get(
@@ -80,26 +80,25 @@ async def accept(
     token: str,
     request: Request,
     user_manager:
-    UserManager = Depends(get_user_manager)
+    UserManager = Depends(get_user_manager),
+    session: AsyncSession = Depends(get_async_session),
 ) -> UserRead:
-    async with async_session() as session:
-        async with commit(session) as session:
-            try:
-                user = await user_manager.verify(token, request)
-                await UserTokenVerify.delete(session, user_id=user.id)
-                return user  # TODO: добавить логирование и подходящий вывод
-            except (
-                exceptions.InvalidVerifyToken, exceptions.UserNotExists
-            ):
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=ErrorCode.VERIFY_USER_BAD_TOKEN,
-                )
-            except exceptions.UserAlreadyVerified:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=ErrorCode.VERIFY_USER_ALREADY_VERIFIED,
-                )
-            except Exception as e:
-                print(e)  # TODO: добавить логирование
-                raise e
+    try:
+        user = await user_manager.verify(token, request)
+        return user  # TODO: добавить логирование и подходящий вывод
+    # Временный токен удаляется в on_after_verify менеджера
+    except (
+        exceptions.InvalidVerifyToken, exceptions.UserNotExists
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorCode.VERIFY_USER_BAD_TOKEN,
+        )
+    except exceptions.UserAlreadyVerified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorCode.VERIFY_USER_ALREADY_VERIFIED,
+        )
+    except Exception as e:
+        print(e)  # TODO: добавить логирование
+        raise e
