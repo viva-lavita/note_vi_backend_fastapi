@@ -7,7 +7,7 @@ from src.auth.manager import UserManager, get_user_manager
 from src.auth.config import current_user
 from src.auth.logic import Role, UserTokenVerify
 from src.database import commit, get_async_session, async_session
-from src.auth.shemas import RoleResponse, UserCreate, UserRead, UserUpdate
+from src.auth.schemas import RoleResponse, UserCreate, UserRead, UserUpdate
 from src.auth.config import auth_backend, fastapi_users
 
 router_auth = APIRouter(prefix="/auth", tags=["auth"])
@@ -49,6 +49,14 @@ async def delete_role(
     await session.commit()
 
 
+@router_roles.get("/{role_id}", response_model=RoleResponse)
+async def get_role(
+    role_id: UUID4,
+    session: AsyncSession = Depends(get_async_session),
+) -> RoleResponse:
+    return await Role.get(session, role_id)
+
+
 @router_auth.get(
     "/accept",
     response_model=UserRead,
@@ -79,8 +87,7 @@ async def delete_role(
 async def accept(
     token: str,
     request: Request,
-    user_manager:
-    UserManager = Depends(get_user_manager),
+    user_manager: UserManager = Depends(get_user_manager),
     session: AsyncSession = Depends(get_async_session),
 ) -> UserRead:
     try:

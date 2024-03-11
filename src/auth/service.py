@@ -1,5 +1,4 @@
 import asyncio
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models import get_by_name
 from src.auth.models import Role, RoleCRUD

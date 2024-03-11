@@ -82,6 +82,7 @@ Base: DeclarativeMeta = declarative_base(metadata=metadata)
 
 #     return wrapper
 
+
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
         yield session
