@@ -3,10 +3,11 @@ from fastapi_users import exceptions
 from fastapi_users.router.common import ErrorCode, ErrorModel
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.auth.manager import UserManager, get_user_manager
-from src.auth.config import current_user
+from src.auth.config import current_user, current_active_user, current_active_verified_user
 from src.auth.logic import Role, UserTokenVerify
-from src.database import commit, get_async_session, async_session
+from src.database import get_async_session
 from src.auth.schemas import RoleResponse, UserCreate, UserRead, UserUpdate
 from src.auth.config import auth_backend, fastapi_users
 
@@ -35,7 +36,8 @@ router_users.include_router(
 
 @router_roles.get("/")
 async def get_roles(
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_async_session),
+    current_user: UserRead = Depends(current_active_verified_user),
 ) -> list[RoleResponse]:
     return await Role.get_list(session)
 

@@ -1,23 +1,18 @@
 import asyncio
 from contextlib import asynccontextmanager
-import datetime
-import os
-from typing import AsyncGenerator, List, Tuple
-from passlib.context import CryptContext
+from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import status
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from fastapi.testclient import TestClient
-from fastapi_users.password import PasswordHelper
-import jwt
-import pytest
 from httpx import AsyncClient
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from redis import asyncio as aioredis
 
-from src.auth.models import Permission, Role, RoleCRUD, User
+from src.auth.models import Permission, Role, User
 from src.config import config
 from src.database import (
     custom_serializer, get_async_session, metadata
@@ -26,9 +21,6 @@ from src.exceptions import new_uuid
 from src.tasks.tasks import celery  # не убирать
 from src.main import app
 
-
-
-import contextlib
 
 from fastapi_users.exceptions import UserAlreadyExists
 
@@ -106,72 +98,9 @@ def fastapi_cache(redis):
     FastAPICache.init(RedisBackend(redis), prefix="test-cache")
 
 
-@pytest.fixture(scope="function")
-async def roles():
-    async with engine_test.begin() as conn:
-        roles_data = [
-            {"id": new_uuid(), "name": "superuser", "permission": Permission.superuser},
-            {"id": new_uuid(), "name": "admin", "permission": Permission.admin},
-            {"id": new_uuid(), "name": "user", "permission": Permission.user},
-            {"id": new_uuid(), "name": "customer", "permission": Permission.customer}
-        ]
-        roles = [Role(**role) for role in roles_data]
-        for role in roles:
-            await conn.execute(Role.__table__.insert().values(
-                id=role.id,
-                name=role.name,
-                permission=role.permission
-            ))
-        return roles
-
-
-@pytest.fixture(scope="function")
-async def role_user() -> Role:
-    async with engine_test.begin() as conn:
-        role = Role(id=new_uuid(), name="user", permission=Permission.user)
-        await conn.execute(
-            Role.__table__.insert().values(
-                id=role.id,
-                name=role.name,
-                permission=role.permission
-            )
-        )
-        return role
-
-
-# @pytest.fixture(scope="function")
-# async def auth_user(role_user) -> User:
-#     """
-#     Обычный аутентифицированный юзер.
-#     """
-#     async with engine_test.begin() as conn:
-#         pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-#         hashed_password = pwd_context.hash("auth_user_password")
-#         user = User(
-#             id=new_uuid(),
-#             email="Wf9b6@example.com",
-#             username="auth_user",
-#             role_id=role_user.id,
-#             hashed_password=hashed_password,
-#             is_active=True,
-#             is_superuser=False,
-#             is_verified=True
-#         )
-#         await conn.execute(User.__table__.insert().values(
-#             id=user.id,
-#             email=user.email,
-#             username=user.username,
-#             role_id=user.role_id,
-#             hashed_password=user.hashed_password,
-#             is_active=user.is_active,
-#             is_superuser=user.is_superuser,
-#             is_verified=user.is_verified
-#         ))
-#         return user
-
-get_async_session_context = contextlib.asynccontextmanager(override_get_async_session)
-get_user_db_context = contextlib.asynccontextmanager(get_user_db)
-get_user_manager_context = contextlib.asynccontextmanager(get_user_manager)
+get_async_session_context = asynccontextmanager(override_get_async_session)
+get_user_db_context = asynccontextmanager(get_user_db)
+get_user_manager_context = asynccontextmanager(get_user_manager)
 
 
 async def create_user(
@@ -201,80 +130,117 @@ async def create_user(
 
 
 @pytest.fixture(scope="function")
-async def user(role_user) -> User:
+async def roles():
+    async with engine_test.begin() as conn:
+        roles_data = [
+            {"id": new_uuid(), "name": "superuser", "permission": Permission.superuser},
+            {"id": new_uuid(), "name": "admin", "permission": Permission.admin},
+            {"id": new_uuid(), "name": "user", "permission": Permission.user},
+            {"id": new_uuid(), "name": "customer", "permission": Permission.customer}
+        ]
+        roles = [Role(**role) for role in roles_data]
+        for role in roles:
+            await conn.execute(Role.__table__.insert().values(
+                id=role.id,
+                name=role.name,
+                permission=role.permission
+            ))
+        return roles
+
+
+# @pytest.fixture(scope="function")
+# async def role_user() -> Role:
+#     async with engine_test.begin() as conn:
+#         role = Role(id=new_uuid(), name="user", permission=Permission.user)
+#         await conn.execute(
+#             Role.__table__.insert().values(
+#                 id=role.id,
+#                 name=role.name,
+#                 permission=role.permission
+#             )
+#         )
+#         return role
+
+
+@pytest.fixture(scope="function")
+async def user(roles) -> User:
     """
-    Обычный аутентифицированный юзер.
+    Обычный зарегистрированный юзер.
     """
     return await create_user(
-        email="Wf9b6@example.com",
-        username="auth_user",
-        password="auth_user_password",
+        email="user@example.com",
+        username="user",
+        password="user_password",
     )
 
 
 @pytest.fixture(scope="function")
-async def auth_user(user) -> User:
+async def user2(roles) -> User:
     """
-    Обычный аутентифицированный юзер.
+    Второй зарегистрированный юзер.
     """
-    async with async_session_maker() as session:
+    return await create_user(
+        email="user2@example.com",
+        username="user2",
+        password="user2_password",
+    )
+
+
+@pytest.fixture(scope="function")
+async def verif_user(ac, user) -> User:
+    """Верифицированный юзер."""
+    async with get_async_session_context() as session:
         async with session.begin():
             user.is_verified = True
             session.add(user)
             await session.commit()
-    return user
+
+    data = {
+        "username": user.email,
+        "password": "user_password"
+    }
+    response = await ac.post("api/v1/auth/login", data=data)
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    access_token = response.cookies.get("Bearer")
+    headers = {
+        "Cookie": f"Bearer={access_token}"
+    }
+    return user, headers
 
 
 @pytest.fixture(scope="function")
-async def auth_headers(auth_user, ac: AsyncClient):
-    """Заголовок аутентифицированного юзера."""
+async def verif_user2(ac, user2) -> User:
+    """Второй верифицированный юзер."""
+    async with get_async_session_context() as session:
+        async with session.begin():
+            user2.is_verified = True
+            session.add(user2)
+            await session.commit()
+
     data = {
-        "username": auth_user.username,
-        "password": "auth_user_password"
+        "username": user2.email,
+        "password": "user2_password"
     }
-    r = await ac.post("api/v1/auth/login", data=data)
-    response = r.json()
-    access_token = response["access_token"]
+    response = await ac.post("api/v1/auth/login", data=data)
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    access_token = response.cookies.get("Bearer")
     headers = {
-        "Authorization": f"Bearer {access_token}",
+        "Cookie": f"Bearer={access_token}"
     }
-    return headers
+    return user2, headers
 
-# Попробовать первый и второй варианты
-class jwt_token:
-    def __init__(self, auth_user):
-        self.user = auth_user
-        self.expiration = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
 
-    def encode(self):
-        """ Сгенерировать токен. """
-        return jwt.encode(
-            {
-                "user_id": self.user.id,
-                "exp": self.expiration
-            },
-            config.SECRET_AUTH_KEY,
-            algorithm="HS256"
-        )
-
-    def decode(self):
-        """ Декодировать токен. """
-        return jwt.decode(
-            self.encode(),
-            config.SECRET_AUTH_KEY,
-            algorithms=["HS256"]
-        )
-
-    def get_headers(self):
-        return {
-            "Authorization": f"Bearer {self.encode()}"
-        }
-
-    def get_query_params(self):
-        return {
-            "access_token": self.encode()
-        }
-
-    def get_token_cookie(self):
-        return self.encode()
-
+# @pytest.fixture(scope="function")
+# async def auth_headers(auth_user, ac: AsyncClient):
+#     """Заголовок аутентифицированного юзера."""
+#     data = {
+#         "username": auth_user.email,
+#         "password": "auth_user_password"
+#     }
+#     response = await ac.post("api/v1/auth/login", data=data)
+#     assert response.status_code == status.HTTP_204_NO_CONTENT
+#     access_token = response.cookies.get("Bearer")
+#     headers = {
+#         "Cookie": f"Bearer={access_token}"
+#     }
+#     return headers

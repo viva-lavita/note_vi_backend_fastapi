@@ -1,40 +1,52 @@
 from httpx import AsyncClient, HTTPStatusError
 from fastapi import status
-from src.models import get_by_name
 
 from src.auth.models import Role, User
-from tests.conftest import engine_test, async_session_maker, jwt_token # не удалять, первый и последний тесты упадут
+from src.config import config
+from tests.conftest import (
+    engine_test,  # не удалять engine_test, первый и последний тесты упадут
+    async_session_maker, get_async_session_context
+)
 
 
 class TestRegister:
     url_register = "api/v1/auth/register"
     url_login = "api/v1/auth/login"
+    url_users = "api/v1/users"
 
     async def test_register(self, ac: AsyncClient, roles: list[Role]) -> None:
-        """Регистрация нового пользователя."""
+        """
+        Регистрация нового пользователя.
+
+        Тестирование возможности регистрации нового пользователя, а
+        так проверка, что пользователь не может присвоить себе роль.
+        """
         response = await ac.post(
             self.url_register,
             json={
-                "email": "artyomsopin@yandex.ru",
+                "email": config.SMTP_USER,
                 "password": "string",
                 "username": "string1",
                 "role_id": roles[1].id
             }
         )
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.json()["email"] == "artyomsopin@yandex.ru"
+        assert response.json()["email"] == config.SMTP_USER
         assert response.json()["username"] == "string1"
         assert response.json()["role_id"] == roles[2].id
+        async with get_async_session_context() as session:
+            user = await session.get(User, response.json()["id"])
+            assert user
 
     async def test_register_already_exists(
             self, ac: AsyncClient, user: User
     ) -> None:
-        """Регистрация уже существующего пользователя."""
+        """Повторная регистрация уже существующего пользователя."""
         response = await ac.post(
             self.url_register,
             json={
                 "email": user.email,
-                "password": "string",
+                "password": "user_password",
                 "username": user.username
             }
         )
@@ -43,31 +55,31 @@ class TestRegister:
             "detail": "REGISTER_USER_ALREADY_EXISTS"
         }
 
-    async def test_login_auth_user(self, ac: AsyncClient, auth_user: User):
+    async def test_login_auth_user(
+            self, ac: AsyncClient, verif_user: tuple[User, dict]
+    ):
         """Авторизация пользователя."""
+        auth_user, _ = verif_user
         response = await ac.post(
             self.url_login,
             data={
                 "username": auth_user.email,
-                "password": "auth_user_password"
+                "password": "user_password"
             }
         )
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    async def test_get_roles_list(
-            self, ac: AsyncClient, roles: list[Role]
-    ) -> None:
-        """Получение списка ролей."""
-        response = await ac.get("api/v1/roles/")
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.json()) == 4
-
-    async def test_get_role_by_id(
-            self, ac: AsyncClient, roles: list[Role]
+    async def test_get_me_auth_user(
+            self, ac: AsyncClient, verif_user: tuple[User, dict]
     ):
-        """Получение роли по id."""
-        async with async_session_maker() as session:
-            role = await get_by_name(session, Role, roles[0].name)
-            response = await ac.get(f"api/v1/roles/{role.id}")
-            assert response.status_code == status.HTTP_200_OK
-            assert response.json()["name"] == role.name
+        """Получение информации о пользователе."""
+        auth_user, auth_headers = verif_user
+        response = await ac.get(
+            self.url_users + "/me",
+            headers=auth_headers
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["email"] == auth_user.email
+        assert data["username"] == auth_user.username
+        assert data["role_id"] == str(auth_user.role_id)
