@@ -9,7 +9,7 @@ from src.auth.manager import get_user_manager
 from src.auth.models import User
 
 
-cookie_transport = CookieTransport(cookie_name="fastapi_users",
+cookie_transport = CookieTransport(cookie_name="Bearer",
                                    cookie_max_age=3600)
 
 
@@ -32,3 +32,14 @@ fastapi_users = FastAPIUsers[User, uuid.UUID](
 )
 
 current_user: User = fastapi_users.current_user()
+current_active_user = fastapi_users.current_user(active=True)
+current_active_verified_user = fastapi_users.current_user(
+    active=True, verified=True
+)
+current_superuser = fastapi_users.current_user(
+    active=True, superuser=True
+)
+# Использование:
+# @app.get("/protected-route")
+# def protected_route(user: User = Depends(current_superuser)):
+#     return f"Hello, {user.email}"

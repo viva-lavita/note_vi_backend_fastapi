@@ -7,12 +7,10 @@ from functools import wraps
 import json
 from typing import AsyncGenerator
 
-from fastapi import Depends
-# from fastapi_users.db import SQLAlchemyUserDatabase
-from sqlalchemy import MetaData, NullPool
+from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.orm import sessionmaker, declarative_base
 
 from src.config import config
 # from src.auth.models import User
@@ -44,13 +42,11 @@ engine = create_async_engine(
     pool_size=10,
 )
 
-# engine = create_async_engine(config.POSTGRES_URI, poolclass=NullPool)
-
 async_session = sessionmaker(
     engine,
     class_=AsyncSession,
     expire_on_commit=False,
-    # autoflush=True
+    autoflush=True
 )
 
 # convention - это набор правил для именования ограничений, связей и т.д.
@@ -97,6 +93,8 @@ async def commit(session: AsyncSession) -> AsyncGenerator[AsyncSession, None]:
     """
     Контекстный менеджер для commit.
     Проверяет, закрывается ли транзакция и если нет, то откатывает.
+    Использовать только если много действий.
+    Для одиночных действий использовать просто await session.commit().
     """
     try:
         if session.in_transaction():

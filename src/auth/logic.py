@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.exceptions import RoleNotFoundError
 from src.auth.models import Role as RoleModel, RoleCRUD, UserTokenVerifyCRUD
-from src.auth.shemas import RoleResponse
+from src.auth.schemas import RoleResponse
 from src.exceptions import ObjectNotFoundError
 from src.models import get_list
 

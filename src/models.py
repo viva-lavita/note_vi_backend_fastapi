@@ -113,9 +113,11 @@ async def get_total_rows(session: AsyncSession, query: Select) -> int:
 async def get_by_name(
         session: AsyncSession, table: Type[Table], name: str
 ) -> Optional[Table]:
+    # query = select(table).where(table.name == name)
+    # return await exactly_one(session, query)
     return (
         await session.execute(select(table).where(table.name == name))
-    ).unique().scalars().first()  # TODO: переделать как get_by_id
+    ).unique().scalars().first()
 
 
 async def get_by_id(

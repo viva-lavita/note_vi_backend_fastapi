@@ -6,6 +6,8 @@ from sqlalchemy import (JSON, TIMESTAMP, UUID, Boolean, Column, ForeignKey,
                         String, Table)
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import backref, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from src.auth.constants import Permission
 from src.database import Base
@@ -19,6 +21,16 @@ class Role(Base):
     id = Column(UUID, primary_key=True, default=new_uuid)
     name = Column(String, nullable=False, unique=True)
     permission = Column(ENUM(Permission), nullable=False)
+
+# class Model(DeclarativeBase):
+#     pass
+
+
+# class Role(Model):
+#     __tablename__ = "role"
+#     id: Mapped[UUID] = mapped_column(primary_key=True, default=new_uuid)
+#     name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+#     permission: Mapped[Permission] = mapped_column(ENUM(Permission), nullable=False)
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
@@ -38,6 +50,9 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     is_active: bool = Column(Boolean, default=True, nullable=False)
     is_superuser: bool = Column(Boolean, default=False, nullable=False)
     is_verified: bool = Column(Boolean, default=False, nullable=False)
+
+    role = relationship("Role", backref=backref("users", uselist=True))
+    # back_populates
 
 
 class UserTokenVerify(Base):

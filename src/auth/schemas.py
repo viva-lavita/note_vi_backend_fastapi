@@ -3,9 +3,15 @@ from typing import Optional
 from fastapi_users import schemas
 from fastapi_users.jwt import JWT_ALGORITHM
 from pydantic import UUID4, BaseModel, EmailStr, validator
-import jwt
 
+from src.auth.constants import Permission
 from src.config import config
+
+
+class RoleResponse(BaseModel):
+    id: UUID4
+    name: str
+    permission: str
 
 
 class UserRead(schemas.BaseUser[UUID4]):
@@ -18,6 +24,7 @@ class UserRead(schemas.BaseUser[UUID4]):
     email: EmailStr
     username: str
     role_id: UUID4
+    # role: RoleResponse
     is_active: bool = True
     is_superuser: bool = False
     is_verified: bool = False
@@ -52,11 +59,6 @@ class UserUpdate(schemas.BaseUserUpdate):
     is_superuser: Optional[bool] = None
     is_verified: Optional[bool] = None
 
-
-class RoleResponse(BaseModel):
-    id: UUID4
-    name: str
-    permission: str
 
 
 class UserTokenVerifyRequest(BaseModel):

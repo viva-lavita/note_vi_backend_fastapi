@@ -3,11 +3,12 @@ from fastapi_users import exceptions
 from fastapi_users.router.common import ErrorCode, ErrorModel
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.auth.manager import UserManager, get_user_manager
-from src.auth.config import current_user
+from src.auth.config import current_user, current_active_user, current_active_verified_user
 from src.auth.logic import Role, UserTokenVerify
-from src.database import commit, get_async_session, async_session
-from src.auth.shemas import RoleResponse, UserCreate, UserRead, UserUpdate
+from src.database import get_async_session
+from src.auth.schemas import RoleResponse, UserCreate, UserRead, UserUpdate
 from src.auth.config import auth_backend, fastapi_users
 
 router_auth = APIRouter(prefix="/auth", tags=["auth"])
@@ -35,18 +36,27 @@ router_users.include_router(
 
 @router_roles.get("/")
 async def get_roles(
-    session: AsyncSession = Depends(get_async_session)
+    session: AsyncSession = Depends(get_async_session),
+    current_user: UserRead = Depends(current_active_verified_user),
 ) -> list[RoleResponse]:
     return await Role.get_list(session)
 
 
 @router_roles.delete("/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_role(
-    role_id: UUID4
+    role_id: UUID4,
+    session: AsyncSession = Depends(get_async_session),
 ) -> None:
-    async with async_session() as session:
-        async with commit(session) as session:
-            await Role.delete(session, role_id)
+    await Role.delete(session, role_id)
+    await session.commit()
+
+
+@router_roles.get("/{role_id}", response_model=RoleResponse)
+async def get_role(
+    role_id: UUID4,
+    session: AsyncSession = Depends(get_async_session),
+) -> RoleResponse:
+    return await Role.get(session, role_id)
 
 
 @router_auth.get(
@@ -79,27 +89,25 @@ async def delete_role(
 async def accept(
     token: str,
     request: Request,
-    user_manager:
-    UserManager = Depends(get_user_manager)
+    user_manager: UserManager = Depends(get_user_manager),
+    session: AsyncSession = Depends(get_async_session),
 ) -> UserRead:
-    async with async_session() as session:
-        async with commit(session) as session:
-            try:
-                user = await user_manager.verify(token, request)
-                await UserTokenVerify.delete(session, user_id=user.id)
-                return user  # TODO: добавить логирование и подходящий вывод
-            except (
-                exceptions.InvalidVerifyToken, exceptions.UserNotExists
-            ):
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=ErrorCode.VERIFY_USER_BAD_TOKEN,
-                )
-            except exceptions.UserAlreadyVerified:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=ErrorCode.VERIFY_USER_ALREADY_VERIFIED,
-                )
-            except Exception as e:
-                print(e)  # TODO: добавить логирование
-                raise e
+    try:
+        user = await user_manager.verify(token, request)
+        return user  # TODO: добавить логирование и подходящий вывод
+    # Временный токен удаляется в on_after_verify менеджера
+    except (
+        exceptions.InvalidVerifyToken, exceptions.UserNotExists
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorCode.VERIFY_USER_BAD_TOKEN,
+        )
+    except exceptions.UserAlreadyVerified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorCode.VERIFY_USER_ALREADY_VERIFIED,
+        )
+    except Exception as e:
+        print(e)  # TODO: добавить логирование
+        raise e
