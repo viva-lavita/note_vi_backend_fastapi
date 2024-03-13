@@ -280,3 +280,4 @@ dist/
 tests/
 __pycache__/
 *.pyc
+Dockerfile

@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi_users import exceptions
 from fastapi_users.router.common import ErrorCode, ErrorModel
@@ -5,11 +7,16 @@ from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.manager import UserManager, get_user_manager
-from src.auth.config import current_user, current_active_user, current_active_verified_user
+from src.auth.config import (
+    current_user, current_active_user, current_active_verified_user,
+    current_superuser
+)
 from src.auth.logic import Role, UserTokenVerify
 from src.database import get_async_session
 from src.auth.schemas import RoleResponse, UserCreate, UserRead, UserUpdate
 from src.auth.config import auth_backend, fastapi_users
+
+logger = logging.getLogger('root')
 
 router_auth = APIRouter(prefix="/auth", tags=["auth"])
 router_users = APIRouter(prefix="/users", tags=["users"])
@@ -37,8 +44,9 @@ router_users.include_router(
 @router_roles.get("/")
 async def get_roles(
     session: AsyncSession = Depends(get_async_session),
-    current_user: UserRead = Depends(current_active_verified_user),
+    # current_user: UserRead = Depends(current_active_verified_user),
 ) -> list[RoleResponse]:
+    # logger.info(current_user)
     return await Role.get_list(session)
 
 
@@ -46,6 +54,7 @@ async def get_roles(
 async def delete_role(
     role_id: UUID4,
     session: AsyncSession = Depends(get_async_session),
+    current_user: UserRead = Depends(current_superuser),
 ) -> None:
     await Role.delete(session, role_id)
     await session.commit()

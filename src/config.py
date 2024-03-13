@@ -100,6 +100,7 @@ class AppSettings(*settings):
     APP_VERSION: str = "1"
     APP_URL: str
     ENVIRONMENT: Environment = Environment.TESTING
+    API_DEBUG: bool = False
 
     class Config:
         case_sensitive = True
