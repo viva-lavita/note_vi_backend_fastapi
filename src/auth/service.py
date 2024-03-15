@@ -1,7 +1,8 @@
 import asyncio
 
 from src.models import get_by_name
-from src.auth.models import Role, RoleCRUD
+from src.auth.models import Role
+from src.auth.logic import Role as RoleCRUD
 from src.database import commit, async_session
 
 
@@ -12,16 +13,16 @@ async def create_roles() -> None:
                 if await get_by_name(session, Role, "superuser"):
                     print("Roles already created")
                     return
-                await RoleCRUD().create(
+                await RoleCRUD.get_or_create(
                     session=session, name="superuser", permission="superuser"
                 )
-                await RoleCRUD().create(
+                await RoleCRUD.get_or_create(
                     session=session, name="admin", permission="admin"
                 )
-                await RoleCRUD().create(
+                await RoleCRUD.get_or_create(
                     session=session, name="user", permission="user"
                 )
-                await RoleCRUD().create(
+                await RoleCRUD.get_or_create(
                     session=session, name="customer", permission="customer"
                 )
                 print("Roles created")

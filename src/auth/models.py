@@ -1,36 +1,23 @@
 from datetime import datetime
-from fastapi import Depends
 
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTableUUID
-from sqlalchemy import (JSON, TIMESTAMP, UUID, Boolean, Column, ForeignKey,
-                        String, Table)
+from sqlalchemy import (TIMESTAMP, UUID, Boolean, Column, ForeignKey,
+                        String)
 from sqlalchemy.dialects.postgresql import ENUM
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import backref, relationship
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from src.auth.constants import Permission
 from src.database import Base
-from src.exceptions import new_uuid
+from src.constants import new_uuid
 from src.models import CRUDBase
 
 
 class Role(Base):
     __tablename__ = "role"
 
-    id = Column(UUID, primary_key=True, default=new_uuid)
-    name = Column(String, nullable=False, unique=True)
-    permission = Column(ENUM(Permission), nullable=False)
-
-# class Model(DeclarativeBase):
-#     pass
-
-
-# class Role(Model):
-#     __tablename__ = "role"
-#     id: Mapped[UUID] = mapped_column(primary_key=True, default=new_uuid)
-#     name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
-#     permission: Mapped[Permission] = mapped_column(ENUM(Permission), nullable=False)
+    id: UUID = Column(UUID, primary_key=True, default=new_uuid)
+    name: str = Column(String, nullable=False, unique=True)
+    permission: Permission = Column(ENUM(Permission), nullable=False)
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
@@ -41,11 +28,11 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     """
     __tablename__ = "user"
 
-    id = Column(UUID, primary_key=True, default=new_uuid)
-    email = Column(String, nullable=False, unique=True)
-    username = Column(String, nullable=False, unique=True)
+    id: UUID = Column(UUID, primary_key=True, default=new_uuid)
+    email: str = Column(String, nullable=False, unique=True)
+    username: str = Column(String, nullable=False, unique=True)
     registered_at = Column(TIMESTAMP, default=datetime.utcnow)
-    role_id = Column(UUID, ForeignKey("role.id"), nullable=False)
+    role_id: UUID = Column(UUID, ForeignKey("role.id"), nullable=False)
     hashed_password: str = Column(String(length=1024), nullable=False)
     is_active: bool = Column(Boolean, default=True, nullable=False)
     is_superuser: bool = Column(Boolean, default=False, nullable=False)
@@ -58,11 +45,11 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
 class UserTokenVerify(Base):
     __tablename__ = "user_tokens"
 
-    id = Column(UUID, primary_key=True, default=new_uuid)
-    user_id = Column(UUID,
-                     ForeignKey("user.id", ondelete="CASCADE"),
-                     nullable=False)
-    token_verify = Column(String)
+    id: UUID = Column(UUID, primary_key=True, default=new_uuid)
+    user_id: UUID = Column(UUID,
+                           ForeignKey("user.id", ondelete="CASCADE"),
+                           nullable=False)
+    token_verify: str = Column(String)
 
 
 class RoleCRUD(CRUDBase):

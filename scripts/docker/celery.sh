@@ -7,7 +7,7 @@ if [[ "${1}" == "celery" ]]; then
   cd logs
   touch celery.log
   cd ..
-  celery --app=src.tasks.tasks:celery worker -l INFO --logfile=/note_vi_backend/logs/celery.log
+  celery --app=src.tasks.tasks:celery worker
 elif [[ "${1}" == "flower" ]]; then
   celery --app=src.tasks.tasks:celery flower
  fi

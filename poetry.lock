@@ -185,6 +185,16 @@ files = [
 ]
 
 [[package]]
+name = "asynclog"
+version = "0.1.7"
+description = "Asynchronous log for python logging."
+optional = false
+python-versions = "*"
+files = [
+    {file = "asynclog-0.1.7.tar.gz", hash = "sha256:532c426f07d85cd13e467ff55601f76903fe646e66471f1cf37ccea5c865c7be"},
+]
+
+[[package]]
 name = "asyncpg"
 version = "0.29.0"
 description = "An asyncio PostgreSQL driver"
@@ -2496,4 +2506,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "32ea9c06313adf27b0ed6a56d108e43875550faf7649304d81143829901c2b4b"
+content-hash = "f2d406b7eeaca07442276ec8aaa92f13cea14caf304805c26b5bf443c71b8dbc"

@@ -30,7 +30,7 @@ def get_email_template_verify(
     email['From'] = config.SMTP_USER
     email['To'] = user_email
 
-    email.set_content(
+    email.set_content(  # TODO: поменять на реальную ссылку сайта+токен, а оттуда уже запрос на accept/
         '<div>'
             f'<h1>Здравствуйте, {username}, вы запросили верификацию на сайте NoteVi.</h1>'
             '<p>Подтвердите свою почту, перейдя по ссылке.</p>'

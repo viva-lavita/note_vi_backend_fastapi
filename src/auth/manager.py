@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 import uuid
 
@@ -6,13 +7,15 @@ from fastapi_users import (
     BaseUserManager, UUIDIDMixin, exceptions, models, schemas
 )
 from src.auth.logic import UserTokenVerify
-from src.database import commit
 from src.models import get_by_name
 
 from src.auth.models import Role, User
 from src.auth.utils import get_user_db
 from src.config import config
 from src.tasks.tasks import send_email_register, send_email_verify
+
+
+logger = logging.getLogger('root')
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
@@ -34,7 +37,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         """
         send_email_register.delay(username=user.username,
                                   user_email=user.email)
-        print(f"User {user.id} has registered.")  # TODO: добавить логирование
+        logger.info(f"User {user.id} has registered.")
 
     async def on_after_forgot_password(
         self, user: User, token: str, request: Optional[Request] = None
@@ -44,7 +47,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         Тут можно дописать отправку письма с подтверждением
         восстановления пароля.
         """
-        print(f"User {user.id} has forgot their password. "
+        print(f"User {user.id} has forgot their password. "  # TODO: настроить восстановление пароля
               f"Reset token: {token}")
 
     async def on_after_request_verify(
@@ -58,10 +61,10 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         send_email_verify.delay(username=user.username,
                                 user_email=user.email,
                                 token=token)
-        async with commit(self.user_db.session) as session:
-            await UserTokenVerify.create(session, user.id, token)
-        print(f"Verification requested for user {user.id}. "  # TODO: добавить логирование
-              f"Verification token: {token}")
+        await UserTokenVerify.get_or_create(self.user_db.session, user.id, token)
+        await self.user_db.session.commit()
+        logger.info(f"Verification requested for user {user.id}. "
+                    f"Verification token: {token}")
 
     async def on_after_verify(
         self, user: User, request: Optional[Request] = None
@@ -69,9 +72,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         """
         Действия после верификации пользователя.
         """
-        async with commit(self.user_db.session) as session:
-            await UserTokenVerify.delete(session, user_id=user.id)
-        print(f"User {user.id} has been verified.")
+        logger.info(f"User {user.username} has been verified.")
 
     async def create(
         self,
@@ -97,7 +98,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         password = user_dict.pop("password")
         user_dict["hashed_password"] = self.password_helper.hash(password)
         role_default = await get_by_name(self.user_db.session, Role, config.ROLE_DEFAULT)
-        user_dict["role_id"] = role_default.id  # TODO: Пересмотреть роль по умолчанию
+        user_dict["role_id"] = role_default.id
 
         created_user = await self.user_db.create(user_dict)
 

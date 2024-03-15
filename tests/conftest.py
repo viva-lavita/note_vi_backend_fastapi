@@ -17,7 +17,7 @@ from src.config import config
 from src.database import (
     custom_serializer, get_async_session, metadata
 )
-from src.exceptions import new_uuid
+from src.constants import new_uuid
 from src.tasks.tasks import celery  # не убирать
 from src.main import app
 

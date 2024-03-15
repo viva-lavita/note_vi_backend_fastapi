@@ -69,6 +69,10 @@ class AuthSettings(BaseSettings):
 class LoggerSettings(BaseSettings):
     LOGGER_CONSOLE: bool = False
     LOGGER_CONSOLE_LEVEL: str = "INFO"
+    LOGGER_FILE: bool = True
+    LOGGER_FILE_MAX_SIZE: int = 1024 * 1024 * 5
+    LOGGER_FILE_MAX_BACKUP: int = 5
+    LOGGER_FILE: str
 
 
 class EmailSettings(BaseSettings):
@@ -100,6 +104,7 @@ class AppSettings(*settings):
     APP_VERSION: str = "1"
     APP_URL: str
     ENVIRONMENT: Environment = Environment.TESTING
+    API_DEBUG: bool = False
 
     class Config:
         case_sensitive = True
