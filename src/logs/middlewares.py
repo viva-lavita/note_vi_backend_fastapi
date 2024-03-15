@@ -47,9 +47,9 @@ class LoggingMiddleware:
         # Request Side
         try:
             raw_request_body = await request.body()
-            # Последующие действия нужны, 
+            # Последующие действия нужны,
             # чтобы не перезатереть тело запроса
-			# и не уйти в зависание event-loop'a
+            # и не уйти в зависание event-loop'a
             # при последующем получении тела ответа
             await self.set_body(request, raw_request_body)
             raw_request_body = await self.get_body(request)
@@ -86,7 +86,7 @@ class LoggingMiddleware:
                 media_type=response.media_type
             )
         duration: int = math.ceil((time.time() - start_time) * 1000)
-		# Инициализация и формирования полей для запроса-ответа
+        # Инициализация и формирования полей для запроса-ответа
         request_json_fields = RequestJsonLogSchema(
             request_uri=str(request.url),
             request_referer=request_headers.get('referer', EMPTY_VALUE),

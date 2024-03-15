@@ -239,4 +239,4 @@ fabric.properties
 
 just.sh
 .env.dev
-logs.json
+logs.json*

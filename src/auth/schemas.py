@@ -24,7 +24,7 @@ class UserRead(schemas.BaseUser[UUID4]):
     email: EmailStr
     username: str
     role_id: UUID4
-    # role: RoleResponse
+    # role: Optional[RoleResponse]
     is_active: bool = True
     is_superuser: bool = False
     is_verified: bool = False

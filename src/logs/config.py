@@ -33,7 +33,7 @@ LOG_CONFIG = {
         },
         'uvicorn': {
             'handlers': ['json', 'console'] if config.API_DEBUG else ['json'],
-            'level': 'INFO',
+            'level': 'INFO' if config.API_DEBUG else 'WARNING',
             'propagate': False,
             'qualname': 'uvicorn',
         },
@@ -53,19 +53,25 @@ LOG_CONFIG = {
             'level': 'WARNING',
             'propagate': False,
         },
-        'celery.task': {
-            'handlers': ['json', 'console'] if config.API_DEBUG else ['json'],
-            'level': 'WARNING',
-            'propagate': False,
-        },
         'celerybeat': {
             'handlers': ['json', 'console'] if config.API_DEBUG else ['json'],
             'level': 'WARNING',
             'propagate': False,
         },
-        'celery.worker': {
+        'postgresql': {
             'handlers': ['json', 'console'] if config.API_DEBUG else ['json'],
             'level': 'WARNING',
+            'propagate': False,
+            'qualname': 'postgresql',
+        },
+        'sqlalchemy': {
+            'handlers': ['json', 'console'] if config.API_DEBUG else ['json'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'redis': {
+            'handlers': ['json', 'console'] if config.API_DEBUG else ['json'],
+            'level': 'DEBUG',
             'propagate': False,
         },
     },

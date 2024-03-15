@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 from pydantic import UUID4
 from sqlalchemy import UUID, select
 
@@ -11,6 +12,9 @@ from src.exceptions import ObjectNotFoundError
 from src.models import get_list
 
 
+logger = logging.getLogger('root')
+
+
 class Role:
     crud = RoleCRUD
 
@@ -19,6 +23,10 @@ class Role:
         try:
             return await cls.crud.get(session, "id", role_id)
         except ObjectNotFoundError:
+            logger.warning(f"Role with id {role_id} not found")
+            return None
+        except Exception as e:
+            logger.exception(e)
             return None
 
     # @classmethod
@@ -31,6 +39,14 @@ class Role:
 
     @classmethod
     async def delete(cls, session: AsyncSession, role_id: UUID4) -> None:
+        try:
+            await cls.crud.get(session, "id", role_id)
+        except ObjectNotFoundError:
+            logger.warning(f"Role with id {role_id} not found")
+            raise RoleNotFoundError
+        except Exception as e:
+            logger.exception(e, exc_info=True)
+            raise
         await cls.crud.delete(session, "id", role_id)
 
     @classmethod

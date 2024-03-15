@@ -44,9 +44,8 @@ router_users.include_router(
 @router_roles.get("/")
 async def get_roles(
     session: AsyncSession = Depends(get_async_session),
-    # current_user: UserRead = Depends(current_active_verified_user),
+    current_user: UserRead = Depends(current_active_verified_user),
 ) -> list[RoleResponse]:
-    # logger.info(current_user)
     return await Role.get_list(session)
 
 
@@ -54,7 +53,7 @@ async def get_roles(
 async def delete_role(
     role_id: UUID4,
     session: AsyncSession = Depends(get_async_session),
-    current_user: UserRead = Depends(current_superuser),
+    current_user: UserRead = Depends(current_active_verified_user),
 ) -> None:
     await Role.delete(session, role_id)
     await session.commit()
@@ -108,15 +107,23 @@ async def accept(
     except (
         exceptions.InvalidVerifyToken, exceptions.UserNotExists
     ):
+        logger.warning(
+            "Token is invalid or user doesn't exist. "
+            f"Request: {request}"
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=ErrorCode.VERIFY_USER_BAD_TOKEN,
         )
     except exceptions.UserAlreadyVerified:
+        logger.warning(
+            "User is already verified."
+            f"Request: {request}"
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=ErrorCode.VERIFY_USER_ALREADY_VERIFIED,
         )
     except Exception as e:
-        print(e)  # TODO: добавить логирование
+        logger.exception(e)
         raise e

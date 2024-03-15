@@ -2,6 +2,7 @@ import datetime
 import json
 import logging
 import traceback
+import os
 
 from src.config import config
 from src.logs.schemas import BaseJsonLogSchema
@@ -76,12 +77,42 @@ class JSONLogFormatter(logging.Formatter):
         return json_log_object
 
 
-def write_log(msg):
-    """
-    Куда выводим/отправляем логи.
+LOG_FILE = config.LOGGER_FILE
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+MAX_BACKUP_FILES = 5
 
-    Тут можно прописать, куда выводим файл.
-    Сейчас логи пишем в один файл в директории logs.
+
+def check_log_file_size() -> int:
     """
-    with open('logs/logs.json', 'a', encoding='utf-8') as f:
+    Проверка размера файла журнала.
+
+    :return: Размер файла журнала в байтах
+    """
+    if os.path.exists(LOG_FILE):
+        return os.path.getsize(LOG_FILE)
+    return 0
+
+
+def rotate_log_files() -> None:
+    """
+    Повторное создание файлов журнала.
+    """
+    for i in range(MAX_BACKUP_FILES - 1, 0, -1):
+        if os.path.exists(f'{LOG_FILE}.{i}'):
+            os.replace(f'{LOG_FILE}.{i}', f'{LOG_FILE}.{i + 1}')
+
+
+def write_log(msg: str) -> None:
+    """
+    Запись сообщения в журнал.
+
+    :param msg: Сообщение журнала
+    """
+    file_size = check_log_file_size()
+
+    if file_size + len(msg) > MAX_FILE_SIZE:
+        rotate_log_files()
+        os.replace(LOG_FILE, f'{LOG_FILE}.1')
+
+    with open(LOG_FILE, 'a', encoding='utf-8') as f:
         f.write(msg + '\n')
