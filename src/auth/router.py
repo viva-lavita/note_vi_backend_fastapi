@@ -1,9 +1,9 @@
 import logging
+from typing import Mapping
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi_users import exceptions
-from fastapi_users.router.common import ErrorCode, ErrorModel
-from pydantic import UUID4
+from fastapi_users.router.common import ErrorCode
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.manager import UserManager, get_user_manager
@@ -12,9 +12,12 @@ from src.auth.config import (
     current_superuser
 )
 from src.auth.logic import Role, UserTokenVerify
-from src.database import get_async_session
+from src.auth.dependencies import valid_role_id, valid_token
 from src.auth.schemas import RoleResponse, UserCreate, UserRead, UserUpdate
 from src.auth.config import auth_backend, fastapi_users
+from src.auth.models import User
+from src.database import get_async_session
+
 
 logger = logging.getLogger('root')
 
@@ -44,72 +47,60 @@ router_users.include_router(
 @router_roles.get("/")
 async def get_roles(
     session: AsyncSession = Depends(get_async_session),
-    current_user: UserRead = Depends(current_active_verified_user),
+    user: User = Depends(current_active_verified_user),
 ) -> list[RoleResponse]:
     return await Role.get_list(session)
 
 
-@router_roles.delete("/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router_roles.delete(
+    "/{role_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 async def delete_role(
-    role_id: UUID4,
+    role: Mapping = Depends(valid_role_id),
     session: AsyncSession = Depends(get_async_session),
-    current_user: UserRead = Depends(current_active_verified_user),
+    user: User = Depends(current_active_verified_user),
 ) -> None:
-    await Role.delete(session, role_id)
+    await Role.delete(session, role.id)
     await session.commit()
+    logger.warning(f"Role {role.name} deleted by {user.username}")
 
 
-@router_roles.get("/{role_id}", response_model=RoleResponse)
+@router_roles.get(
+        "/{role_id}",
+)
 async def get_role(
-    role_id: UUID4,
+    role: Mapping = Depends(valid_role_id),
     session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_active_verified_user),
 ) -> RoleResponse:
-    return await Role.get(session, role_id)
+    return role
 
 
 @router_auth.get(
     "/accept",
     response_model=UserRead,
-    name="auth:accept",
-    responses={
-        status.HTTP_400_BAD_REQUEST: {
-            "model": ErrorModel,
-            "content": {
-                "application/json": {
-                    "examples": {
-                        ErrorCode.VERIFY_USER_BAD_TOKEN: {
-                            "summary": "Bad token, not existing user or"
-                            "not the e-mail currently set for the user.",
-                            "value": {"detail": ErrorCode.VERIFY_USER_BAD_TOKEN},
-                        },
-                        ErrorCode.VERIFY_USER_ALREADY_VERIFIED: {
-                            "summary": "The user is already verified.",
-                            "value": {
-                                "detail": ErrorCode.VERIFY_USER_ALREADY_VERIFIED
-                            },
-                        },
-                    }
-                }
-            },
-        }
-    },
 )
 async def accept(
-    token: str,
     request: Request,
+    token: Mapping = Depends(valid_token),
     user_manager: UserManager = Depends(get_user_manager),
-    session: AsyncSession = Depends(get_async_session),
+    session: AsyncSession = Depends(get_async_session)
 ) -> UserRead:
     try:
-        user = await user_manager.verify(token, request)
-        return user  # TODO: добавить логирование и подходящий вывод
-    # Временный токен удаляется в on_after_verify менеджера
+        user = await user_manager.verify(token.token_verify, request)
+        await UserTokenVerify.delete(session, token.token_verify)
+        await session.commit()
+        logger.info(
+            f"User {user.username} accepted, token id {token.id} deleted"
+        )
+        return user
     except (
         exceptions.InvalidVerifyToken, exceptions.UserNotExists
     ):
         logger.warning(
             "Token is invalid or user doesn't exist. "
-            f"Request: {request}"
+            f"Token: {token} User {current_user}"
         )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -118,7 +109,7 @@ async def accept(
     except exceptions.UserAlreadyVerified:
         logger.warning(
             "User is already verified."
-            f"Request: {request}"
+            f"User id {token.user_id} token id {token.id}"
         )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

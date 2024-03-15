@@ -4,7 +4,7 @@ from fastapi import status
 import pytest
 
 from src.auth.models import Role, User
-from src.models import get_by_name
+from src.models import get_by_id, get_by_name
 from tests.conftest import (
     engine_test,  # не удалять engine_test, первый и последний тесты упадут
     async_session_maker,
@@ -25,13 +25,13 @@ class TestRoles:
         assert len(response.json()) == 4
 
     async def test_get_role_by_id(
-            self, ac: AsyncClient, roles: list[Role],
-            verif_user: tuple[User, dict]
+            self, ac: AsyncClient, verif_user: tuple[User, dict]
     ):
         """Получение роли по id."""
-        _, auth_headers = verif_user
+        user, auth_headers = verif_user
         async with get_async_session_context() as session:
-            role = await get_by_name(session, Role, roles[0].name)
+            role = await get_by_id(session, Role, user.role_id)
+            assert role
             response = await ac.get(
                 f"{self.url}{role.id}", headers=auth_headers
             )

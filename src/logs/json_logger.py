@@ -47,7 +47,7 @@ class JSONLogFormatter(logging.Formatter):
             thread=record.process,
             timestamp=now,
             level=record.levelno,
-            level_name=config.LOGGER_CONSOLE_LEVEL,
+            level_name=record.levelname,
             message=message,
             source=record.name,
             duration=duration,

@@ -5,11 +5,10 @@ from sqlalchemy import UUID, select
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.exceptions import RoleNotFoundError
 from src.auth.models import Role as RoleModel, RoleCRUD, UserTokenVerifyCRUD
 from src.auth.schemas import RoleResponse
 from src.exceptions import ObjectNotFoundError
-from src.models import get_list
+from src.models import get_list, get_by_name
 
 
 logger = logging.getLogger('root')
@@ -20,33 +19,18 @@ class Role:
 
     @classmethod
     async def get(cls, session: AsyncSession, role_id: UUID4) -> RoleResponse:
-        try:
-            return await cls.crud.get(session, "id", role_id)
-        except ObjectNotFoundError:
-            logger.warning(f"Role with id {role_id} not found")
-            return None
-        except Exception as e:
-            logger.exception(e)
-            return None
+        return await cls.crud.get(session, "id", role_id)
 
     # @classmethod
     # async def create(cls, session: AsyncSession, **kwargs) -> RoleResponse:
     #     created_fields = dict(created_at=datetime.utcnow(), **kwargs)
 
-    #     account = await cls.crud.create(session, **created_fields)
+    #     role = await cls.crud.create(session, **created_fields)
 
-    #     return account
+    #     return role
 
     @classmethod
     async def delete(cls, session: AsyncSession, role_id: UUID4) -> None:
-        try:
-            await cls.crud.get(session, "id", role_id)
-        except ObjectNotFoundError:
-            logger.warning(f"Role with id {role_id} not found")
-            raise RoleNotFoundError
-        except Exception as e:
-            logger.exception(e, exc_info=True)
-            raise
         await cls.crud.delete(session, "id", role_id)
 
     @classmethod
@@ -59,6 +43,17 @@ class Role:
     async def get_list(cls, session: AsyncSession) -> list[RoleResponse]:
         return await get_list(session, select(RoleModel))
 
+    @classmethod
+    async def get_or_create(
+        cls, session: AsyncSession, name: str, permission: str
+    ) -> RoleResponse:
+        role = await get_by_name(session, RoleModel, name)
+        if role is None:
+            return await cls.crud.create(
+                session, name=name, permission=permission
+            )
+        return role
+
 
 class UserTokenVerify:
     crud = UserTokenVerifyCRUD
@@ -67,18 +62,23 @@ class UserTokenVerify:
     async def get(
         cls, session: AsyncSession, token_verify: str
     ) -> UserTokenVerifyCRUD:
-        try:
-            return await cls.crud.get(session, "token_verify", token_verify)
-        except ObjectNotFoundError:
-            return None
+        return await cls.crud.get(session, "token_verify", token_verify)
 
     @classmethod
-    async def delete(cls, session: AsyncSession, user_id: UUID4) -> None:
-        await cls.crud.delete(session, "user_id", user_id)
+    async def delete(cls, session: AsyncSession, token_verify: str) -> None:
+        await cls.crud.delete(session, "token_verify", token_verify)
 
     @classmethod
-    async def create(
+    async def get_or_create(
         cls, session: AsyncSession, user_id: UUID4, token_verify: str
     ) -> UserTokenVerifyCRUD:
-        created_fields = dict(user_id=user_id, token_verify=token_verify)
-        return await cls.crud.create(session, **created_fields)
+        try:
+            instance = await cls.crud.get(session, "user_id", user_id)
+            instance.token_verify = token_verify
+            updated_fields = dict(token_verify=token_verify)
+            return await cls.crud.update(
+                session, "user_id", user_id, **updated_fields
+            )
+        except ObjectNotFoundError:
+            created_fields = dict(user_id=user_id, token_verify=token_verify)  # Можно добавить еще полей
+            return await cls.crud.create(session, **created_fields)

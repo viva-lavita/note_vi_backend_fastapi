@@ -1,4 +1,5 @@
 from enum import Enum
+from uuid import uuid4
 
 
 class Environment(str, Enum):
@@ -18,3 +19,7 @@ class Environment(str, Enum):
     @property
     def is_deployed(self) -> bool:
         return self not in (self.TESTING)
+
+
+def new_uuid() -> str:
+    return str(uuid4())
