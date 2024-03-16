@@ -1,21 +1,21 @@
-from typing import Any, Optional
-from typing import List
-from typing import Type
-from typing import TypeVar
+from typing import Any, Optional, Type, TypeVar
 
-from sqlalchemy import delete
-from sqlalchemy import func
-from sqlalchemy import select
-from sqlalchemy import update
+from sqlalchemy import UUID, delete, func, select, update
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import Select
 
+from src.constants import new_uuid
 from src.database import Base
 from src.exceptions import ObjectNotFoundError
 
 Table = TypeVar("Table", bound=Base)
 
+
+class MixinID:
+    """Миксин добавления id в таблицы."""
+    id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=new_uuid)
 
 class CRUDBase:
     table: Type[Table]
@@ -55,7 +55,7 @@ class CRUDBase:
         await session.flush()
 
 
-async def get_list(session: AsyncSession, query: Select) -> List[Table]:
+async def get_list(session: AsyncSession, query: Select) -> list[Table]:
     """
     Метод позволяет получить список объектов.
     На вход подаются следующие параметры:
@@ -93,16 +93,15 @@ async def get_total_rows(session: AsyncSession, query: Select) -> int:
     """
     Метод позволяет получить общее количество элементов.
 
-    Параметры:
-    session - сессия SQLAlchemy
-    query - запрос в формате SQLAlchemy, например:
+    :param session: сессия
+    :param query: запрос в формате SQLAlchemy, например:
     select(User).where(User.name == 'John')
 
-    Возвращает:
-    Общее количество элементов, соответствующих запросу.
+    :return: Общее количество элементов, соответствующих запросу.
 
     Исключения:
-    Нет
+    ObjectNotFoundError - если результат запроса пуст
+    MultipleResultFound - если результат запроса содержит более одного элемента
     """
     return (
         await session.execute(select(func.count())
@@ -113,8 +112,14 @@ async def get_total_rows(session: AsyncSession, query: Select) -> int:
 async def get_by_name(
         session: AsyncSession, table: Type[Table], name: str
 ) -> Optional[Table]:
-    # query = select(table).where(table.name == name)
-    # return await exactly_one(session, query)
+    """
+    Возвращает объект по полю 'name'.
+
+    :param session: асинхронная сессия
+    :param table: класс sqlalchemy (из файлов models.py)
+    :param name: значение поля 'name'
+    :return: экземпляр класса
+    """
     return (
         await session.execute(select(table).where(table.name == name))
     ).unique().scalars().first()

@@ -97,7 +97,9 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         )
         password = user_dict.pop("password")
         user_dict["hashed_password"] = self.password_helper.hash(password)
-        role_default = await get_by_name(self.user_db.session, Role, config.ROLE_DEFAULT)
+        role_default = await get_by_name(
+            self.user_db.session, Role, config.ROLE_DEFAULT
+        )
         user_dict["role_id"] = role_default.id
 
         created_user = await self.user_db.create(user_dict)

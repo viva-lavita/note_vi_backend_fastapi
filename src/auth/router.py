@@ -17,6 +17,7 @@ from src.auth.schemas import RoleResponse, UserCreate, UserRead, UserUpdate
 from src.auth.config import auth_backend, fastapi_users
 from src.auth.models import User
 from src.database import get_async_session
+from src.models import get_by_id
 
 
 logger = logging.getLogger('root')
