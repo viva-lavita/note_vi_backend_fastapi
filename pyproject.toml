@@ -22,6 +22,7 @@ redis = "^5.0.2"
 pytest = "^8.1.1"
 pytest-asyncio = "^0.23.5.post1"
 asynclog = "^0.1.7"
+aiofiles = "^23.2.1"
 
 [build-system]
 requires = ["poetry-core"]

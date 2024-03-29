@@ -42,6 +42,7 @@ class TestRegister:
         async with get_async_session_context() as session:
             user = await session.get(User, response.json()["id"])
             assert user
+            assert user.username == "string1"
 
     async def test_verivication_user(
             self, ac: AsyncClient, user: User
@@ -108,30 +109,29 @@ class TestRegister:
         }
 
     async def test_login_auth_user(
-            self, ac: AsyncClient, verif_user: tuple[User, dict]
+            self, ac: AsyncClient, verif_user
     ):
         """Авторизация пользователя."""
-        auth_user, _ = verif_user
         response = await ac.post(
             self.url_login,
             data={
-                "username": auth_user.email,
+                "username": verif_user.email,
                 "password": "user_password"
             }
         )
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
     async def test_get_me_auth_user(
-            self, ac: AsyncClient, verif_user: tuple[User, dict]
+            self, ac: AsyncClient, auth_verif_user: tuple[User, dict]
     ):
         """Получение информации о пользователе."""
-        auth_user, auth_headers = verif_user
+        user, headers = auth_verif_user
         response = await ac.get(
             self.url_users + "/me",
-            headers=auth_headers
+            headers=headers
         )
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert data["email"] == auth_user.email
-        assert data["username"] == auth_user.username
-        assert data["role_id"] == str(auth_user.role_id)
+        assert data["email"] == user.email
+        assert data["username"] == user.username
+        assert data["role_id"] == str(user.role_id)

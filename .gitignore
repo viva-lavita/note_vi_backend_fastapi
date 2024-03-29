@@ -240,3 +240,4 @@ fabric.properties
 just.sh
 .env.dev
 logs.json*
+static/

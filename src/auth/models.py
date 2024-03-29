@@ -7,16 +7,16 @@ from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.auth.constants import Permission
+from src.constants import new_uuid
 from src.database import Base
 from src.models import CRUDBase, MixinID
 
 
-class Role(Base, MixinID):
+class Role(Base):
     __tablename__ = "role"
 
-    name: Mapped[str] = mapped_column(String,
-                                      nullable=False,
-                                      unique=True)
+    id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=new_uuid)
+    name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     permission: Mapped[Permission] = mapped_column(ENUM(Permission),
                                                    nullable=False)
 
@@ -37,7 +37,11 @@ class Role(Base, MixinID):
         )
 
 
-class User(SQLAlchemyBaseUserTableUUID, Base, MixinID):
+class RoleCRUD(CRUDBase):
+    table = Role
+
+
+class User(SQLAlchemyBaseUserTableUUID, Base):
     """
     Модель пользователя.
     Если is_active = False, то запросы на вход в систему и
@@ -45,14 +49,14 @@ class User(SQLAlchemyBaseUserTableUUID, Base, MixinID):
     """
     __tablename__ = "user"
 
-    email: Mapped[str] = mapped_column(String,
+    id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=new_uuid)
+    email: Mapped[str] = mapped_column(String(64),
                                        nullable=False,
                                        unique=True)
-    username: Mapped[str] = mapped_column(String,
+    username: Mapped[str] = mapped_column(String(64),
                                           nullable=False,
                                           unique=True)
-    registered_at = mapped_column(TIMESTAMP,
-                                  default=datetime.utcnow)
+    registered_at = mapped_column(TIMESTAMP, default=datetime.utcnow)
     updated_at = mapped_column(TIMESTAMP,
                                default=datetime.utcnow,
                                onupdate=datetime.utcnow)
@@ -62,14 +66,12 @@ class User(SQLAlchemyBaseUserTableUUID, Base, MixinID):
                                           nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(length=1024),
                                                  nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean,
-                                            default=True)
-    is_superuser: Mapped[bool] = mapped_column(Boolean,
-                                               default=False)
-    is_verified: Mapped[bool] = mapped_column(Boolean,
-                                              default=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
 
     role: Mapped["Role"] = relationship(back_populates="users")
+    files = relationship("File", back_populates="user")
 
     def __str__(self):
         return f"Person(username={self.username}, email={self.email})"
@@ -82,9 +84,13 @@ class User(SQLAlchemyBaseUserTableUUID, Base, MixinID):
         )
 
 
-class UserTokenVerify(Base, MixinID):
+class UserCRUD(CRUDBase):
+    table = User
+
+class UserTokenVerify(Base):
     __tablename__ = "user_tokens"
 
+    id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=new_uuid)
     user_id: Mapped[UUID] = mapped_column(UUID,
                                           ForeignKey("user.id",
                                                      ondelete="CASCADE"),
@@ -104,10 +110,6 @@ class UserTokenVerify(Base, MixinID):
             f"user_id={self.user_id!r}, "
             f"token_verify={self.token_verify!r})"
         )
-
-
-class RoleCRUD(CRUDBase):
-    table = Role
 
 
 class UserTokenVerifyCRUD(CRUDBase):

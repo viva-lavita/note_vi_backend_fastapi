@@ -88,13 +88,19 @@ class RedisSettings(BaseSettings):
     REDIS_URL: Optional[str] = None
 
 
+class FilesSettings(BaseSettings):
+    ALLOWED_EXTENSIONS: set[str] = {'png', 'jpg', 'jpeg', 'gif', 'md'}
+    MAX_CONTENT_LENGTH: int = 16 * 1000 * 1000
+
+
 settings = [
     PostgresDBSettings,
     TestPostgresDBSettings,
     AuthSettings,
     LoggerSettings,
     EmailSettings,
-    RedisSettings
+    RedisSettings,
+    FilesSettings
 ]
 
 

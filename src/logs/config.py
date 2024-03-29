@@ -31,6 +31,11 @@ LOG_CONFIG = {
             'level': 'INFO' if config.API_DEBUG else 'WARNING',
             'propagate': False,
         },
+        'tests': {
+            'handlers': ['json', 'console'] if config.API_DEBUG else ['json'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         'uvicorn': {
             'handlers': ['json', 'console'] if config.API_DEBUG else ['json'],
             'level': 'INFO' if config.API_DEBUG else 'WARNING',

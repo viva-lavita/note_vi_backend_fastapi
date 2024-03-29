@@ -9,15 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth.manager import UserManager, get_user_manager
 from src.auth.config import (
     current_user, current_active_user, current_active_verified_user,
-    current_superuser
+    current_superuser, auth_backend, fastapi_users
 )
 from src.auth.logic import Role, UserTokenVerify
 from src.auth.dependencies import valid_role_id, valid_token
 from src.auth.schemas import RoleResponse, UserCreate, UserRead, UserUpdate
-from src.auth.config import auth_backend, fastapi_users
 from src.auth.models import User
 from src.database import get_async_session
-from src.models import get_by_id
 
 
 logger = logging.getLogger('root')

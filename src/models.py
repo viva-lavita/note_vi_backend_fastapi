@@ -17,6 +17,7 @@ class MixinID:
     """Миксин добавления id в таблицы."""
     id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=new_uuid)
 
+
 class CRUDBase:
     table: Type[Table]
 

@@ -6,7 +6,7 @@ from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.logic import UserTokenVerify
-from src.auth.exceptions import RoleNotFoundError, TokenNotFoundError
+from src.auth.constants import RoleNotFoundError, TokenNotFoundError
 from src.auth.models import Role
 from src.database import get_async_session
 from src.exceptions import ObjectNotFoundError

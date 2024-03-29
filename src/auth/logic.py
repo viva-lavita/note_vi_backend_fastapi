@@ -2,7 +2,6 @@ from datetime import datetime
 import logging
 from pydantic import UUID4
 from sqlalchemy import UUID, select
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.models import Role as RoleModel, RoleCRUD, UserTokenVerifyCRUD

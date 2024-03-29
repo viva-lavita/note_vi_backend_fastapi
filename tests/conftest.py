@@ -107,7 +107,8 @@ async def create_user(
         email: str,
         password: str,
         username: str,
-        is_superuser: bool = False
+        is_superuser: bool = False,
+        is_verified: bool = False
 ):
     """Создание юзера программно для тестов."""
     try:
@@ -120,6 +121,7 @@ async def create_user(
                             username=username,
                             password=password,
                             is_superuser=is_superuser,
+                            is_verified=is_verified
                         )
                     )
                     print(f"User created {user}")
@@ -175,60 +177,79 @@ async def user(roles) -> User:
 
 
 @pytest.fixture(scope="function")
-async def user2(roles) -> User:
+async def verif_user(roles) -> User:
     """
-    Второй зарегистрированный юзер.
+    Верифицированный юзер.
     """
     return await create_user(
         email="user2@example.com",
-        username="user2",
-        password="user2_password",
+        username="user",
+        password="user_password",
+        is_verified=True
     )
 
 
 @pytest.fixture(scope="function")
-async def verif_user(ac, user) -> User:
-    """Верифицированный юзер."""
-    async with get_async_session_context() as session:
-        async with session.begin():
-            user.is_verified = True
-            session.add(user)
-            await session.commit()
+async def superuser(roles) -> User:
+    """
+    Суперюзер.
+    """
+    return await create_user(
+        email="superuser@example.com",
+        username="superuser",
+        password="superuser_password",
+        is_superuser=True,
+        is_verified=True
+    )
 
-    data = {
-        "username": user.email,
-        "password": "user_password"
-    }
+
+async def get_auth_headers(ac, data):
     response = await ac.post("api/v1/auth/login", data=data)
     assert response.status_code == status.HTTP_204_NO_CONTENT
     access_token = response.cookies.get("Bearer")
     headers = {
         "Cookie": f"Bearer={access_token}"
     }
+    return headers
+
+
+@pytest.fixture(scope="function")
+async def auth_user(ac, user) -> User:
+    """Авторизованный в системе не верифицированный юзер."""
+    data = {
+        "username": user.email,
+        "password": "user2_password"
+    }
+    headers = await get_auth_headers(ac, data)
     return user, headers
 
 
 @pytest.fixture(scope="function")
-async def verif_user2(ac, user2) -> User:
-    """Второй верифицированный юзер."""
-    async with get_async_session_context() as session:
-        async with session.begin():
-            user2.is_verified = True
-            session.add(user2)
-            await session.commit()
+async def auth_verif_user(ac, verif_user) -> User:
+    """Авторизованный в системе верифицированный юзер."""
+    # async with get_async_session_context() as session:
+    #     async with session.begin():
+    #         user.is_verified = True
+    #         session.add(user)
+    #         await session.commit()
 
     data = {
-        "username": user2.email,
-        "password": "user2_password"
+        "username": verif_user.email,
+        "password": "user_password"
     }
-    response = await ac.post("api/v1/auth/login", data=data)
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-    access_token = response.cookies.get("Bearer")
-    headers = {
-        "Cookie": f"Bearer={access_token}"
-    }
-    return user2, headers
+    headers = await get_auth_headers(ac, data)
+    return verif_user, headers
 
+
+@pytest.fixture(scope="function")
+async def auth_superuser(ac, superuser) -> tuple[User, dict]:
+    """Авторизованный в системе суперюзер."""
+    data = {
+        "username": superuser.email,
+        "password": "superuser_password"
+    }
+    headers = await get_auth_headers(ac, data)
+    return superuser, headers
 
 # @pytest.fixture(scope="function")
 # async def auth_headers(auth_user, ac: AsyncClient):

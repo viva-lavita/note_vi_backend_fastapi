@@ -17,6 +17,7 @@ from src.logs.config import LOG_CONFIG
 from src.logs.middlewares import LoggingMiddleware
 from src.tasks.router import router_tasks
 from src.tasks.tasks import celery  # не убирать
+from src.summary.router import router_summary
 
 
 dictConfig(LOG_CONFIG)
@@ -25,8 +26,9 @@ logger = logging.getLogger('root')
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    from src.auth.service import create_roles
-    await create_roles()  # Убрать в проде
+    from src.auth.service import create_test_data, create_users
+    await create_test_data()  # TODO: Убрать в проде
+    await create_users()
     redis = aioredis.from_url(
         config.REDIS_URL,
         encoding="utf8",
@@ -79,3 +81,4 @@ app.include_router(router_auth)
 app.include_router(router_users)
 app.include_router(router_roles)
 app.include_router(router_tasks)
+app.include_router(router_summary)

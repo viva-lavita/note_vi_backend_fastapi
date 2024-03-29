@@ -1,4 +1,6 @@
 from enum import Enum
+import os
+from pathlib import Path
 from uuid import uuid4
 
 
@@ -23,3 +25,11 @@ class Environment(str, Enum):
 
 def new_uuid() -> str:
     return str(uuid4())
+
+
+def get_base_dir() -> str:
+    return os.path.dirname(__file__)
+
+
+def get_project_root() -> str:
+    return Path(__file__).resolve().parent.parent
