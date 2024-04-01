@@ -4,7 +4,7 @@ from pydantic import UUID4
 from sqlalchemy import UUID, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.models import Role as RoleModel, RoleCRUD, UserTokenVerifyCRUD
+from src.auth.models import Role as RoleModel, RoleCRUD, UserCRUD, UserTokenVerifyCRUD
 from src.auth.schemas import RoleResponse
 from src.exceptions import ObjectNotFoundError
 from src.models import get_list, get_by_name
@@ -81,3 +81,16 @@ class UserTokenVerify:
         except ObjectNotFoundError:
             created_fields = dict(user_id=user_id, token_verify=token_verify)  # Можно добавить еще полей
             return await cls.crud.create(session, **created_fields)
+
+
+class User:
+    crud = UserCRUD
+
+    @classmethod
+    async def get(cls, session: AsyncSession, field: str, value) -> UserCRUD:
+        return await cls.crud.get(session, field, value)
+
+    # @classmethod
+    # async def get_list(cls, session: AsyncSession, field: str, value) -> UserCRUD:
+    #     query = select(UserCRUD.table).where(getattr(UserCRUD.table, field) == value)
+    #     return await get_list(session, query)

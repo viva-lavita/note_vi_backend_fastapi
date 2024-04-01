@@ -80,6 +80,13 @@ class UserUpdate(schemas.BaseUserUpdate):
     is_verified: bool | None = None
 
 
+class ShortUser(BaseModel):
+    id: UUID4
+    username: str
+
+    class Config:
+        from_attributes = True
+
 class UserTokenVerifyRequest(BaseModel):
 
     class Config:

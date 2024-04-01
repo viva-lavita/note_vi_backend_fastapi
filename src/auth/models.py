@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTableUUID
 from sqlalchemy import (TIMESTAMP, UUID, Boolean, ForeignKey,
@@ -49,29 +50,26 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     """
     __tablename__ = "user"
 
-    id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=new_uuid)
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_uuid)
     email: Mapped[str] = mapped_column(String(64),
-                                       nullable=False,
                                        unique=True)
     username: Mapped[str] = mapped_column(String(64),
-                                          nullable=False,
                                           unique=True)
-    registered_at = mapped_column(TIMESTAMP, default=datetime.utcnow)
+    registered_at: Mapped[datetime] = mapped_column(TIMESTAMP,
+                                                    default=datetime.utcnow)
     updated_at = mapped_column(TIMESTAMP,
                                default=datetime.utcnow,
                                onupdate=datetime.utcnow)
-    role_id: Mapped[UUID] = mapped_column(UUID,
-                                          ForeignKey("role.id",
-                                                     ondelete="RESTRICT"),
-                                          nullable=False)
-    hashed_password: Mapped[str] = mapped_column(String(length=1024),
-                                                 nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
-    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    role_id: Mapped[UUID] = mapped_column(ForeignKey("role.id",
+                                                     ondelete="RESTRICT"))
+    hashed_password: Mapped[str]
+    is_active: Mapped[bool] = mapped_column(default=True)
+    is_superuser: Mapped[bool] = mapped_column(default=False)
+    is_verified: Mapped[bool] = mapped_column(default=False)
 
     role: Mapped["Role"] = relationship(back_populates="users")
     files = relationship("File", back_populates="user")
+    summaries = relationship("Summary", back_populates="author")
 
     def __str__(self):
         return f"Person(username={self.username}, email={self.email})"
@@ -87,16 +85,14 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
 class UserCRUD(CRUDBase):
     table = User
 
+
 class UserTokenVerify(Base):
     __tablename__ = "user_tokens"
 
-    id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=new_uuid)
-    user_id: Mapped[UUID] = mapped_column(UUID,
-                                          ForeignKey("user.id",
-                                                     ondelete="CASCADE"),
-                                          nullable=False)
-    token_verify: Mapped[str] = mapped_column(String,
-                                              nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_uuid)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id",
+                                                     ondelete="CASCADE"))
+    token_verify: Mapped[str]
 
     def __str__(self):
         return (

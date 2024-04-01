@@ -1,5 +1,4 @@
 run:
-  scripts/create_roles.sh
   uvicorn src.main:app --reload
 
 up:
@@ -53,3 +52,9 @@ create network:
 
 tests:
     docker compose exec app pytest
+
+locmigrate:
+    alembic upgrade head
+
+bd *args:
+    alembic revision --autogenerate -m "{{args}}"

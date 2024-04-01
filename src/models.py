@@ -64,7 +64,7 @@ async def get_list(session: AsyncSession, query: Select) -> list[Table]:
     query - запрос в формате sqlalchemy, например:
     select(User).where(User.name == 'John')
     """
-    return (await session.execute(query)).scalars().all()
+    return (await session.execute(query)).unique().scalars().all()
 
 
 async def exactly_one(session: AsyncSession, query) -> Optional[Table]:

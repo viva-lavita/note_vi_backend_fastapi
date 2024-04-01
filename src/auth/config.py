@@ -10,7 +10,7 @@ from src.auth.models import User
 
 
 cookie_transport = CookieTransport(cookie_name="Bearer",
-                                   cookie_max_age=3600)
+                                   cookie_max_age=60 * 60 * 24 * 7)
 
 
 def get_jwt_strategy() -> JWTStrategy:

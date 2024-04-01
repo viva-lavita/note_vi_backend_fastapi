@@ -1,15 +1,39 @@
+from datetime import datetime
+
+from pydantic import UUID4, BaseModel, Field
+
+from src.auth.schemas import ShortUser
 
 
-
-
-from pydantic import UUID4, BaseModel
-
-
-class FileOut(BaseModel):
+class File(BaseModel):
     id: UUID4
     name: str
     path: str
-    user_id: UUID4
+    user: ShortUser
+
+    class Config:
+        from_attributes = True
+
+
+class FileOut(BaseModel):
+    file: File
+    user: ShortUser
+
+
+class SummaryImage(BaseModel):
+    id: UUID4
+    path: str
+
+
+class Summary(BaseModel):
+    id: UUID4
+    name: str = Field(max_length=256)
+    summary_path: str
+    images: list[SummaryImage] | None
+    is_public: bool
+    created_at: datetime
+    updated_at: datetime
+    author: ShortUser
 
     class Config:
         from_attributes = True
