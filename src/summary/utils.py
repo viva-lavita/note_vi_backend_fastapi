@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 from uuid import UUID
@@ -8,6 +9,8 @@ from fastapi import UploadFile
 from src.config import config
 from src.constants import get_project_root
 
+
+logger = logging.getLogger('root')
 
 def get_dir_path(user_id: UUID, type: str = "other") -> str:
     """
@@ -64,6 +67,12 @@ def allowed_type_summary(filename: str) -> bool:
             in {'md'})
 
 
+def allowed_type_image(filename: str) -> bool:
+    """Проверяет, является ли формат изображения допустимым."""
+    return ('.' in filename and filename.rsplit('.', 1)[1].lower()
+            in {'png', 'jpg', 'jpeg', 'gif', 'svg'})
+
+
 def get_filename(filename: str, user_id: UUID, type: str = "other") -> str:
     """
     Проверяет уникальность имени файла.
@@ -81,7 +90,10 @@ def get_filename(filename: str, user_id: UUID, type: str = "other") -> str:
     return filename
 
 
-async def save_file(file: UploadFile, filename: str, user_id: UUID, type: str = "other") -> None:
+async def save_file(
+        file: UploadFile, filename: str, user_id: UUID,
+        type: str = "other"
+) -> None:
     """
     Сохраняет файл в директорию пользователя.
 
@@ -99,3 +111,13 @@ async def save_file(file: UploadFile, filename: str, user_id: UUID, type: str = 
         os.makedirs(dir_path)
     async with aiofiles.open(get_absolute_file_path(filename, user_id, type), 'wb') as f:
         await f.write(await file.read())
+
+
+async def delete_file(file_path):
+    try:
+        path = os.path.join(get_project_root(), file_path)
+        os.remove(path)
+    except Exception as e:
+        logger.warning(
+            f"Ошибка при удалении файла {file_path.split('/')[-1]}: {e}"
+        )

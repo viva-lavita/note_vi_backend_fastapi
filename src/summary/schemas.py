@@ -15,11 +15,6 @@ class File(BaseModel):
         from_attributes = True
 
 
-class FileOut(BaseModel):
-    file: File
-    user: ShortUser
-
-
 class SummaryImage(BaseModel):
     id: UUID4
     path: str
@@ -37,3 +32,11 @@ class Summary(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class SummaryUpdate(BaseModel):
+    name: str | None = Field(max_length=256)
+    is_public: bool | None
+
+    # class Config:
+    #     from_attributes = True

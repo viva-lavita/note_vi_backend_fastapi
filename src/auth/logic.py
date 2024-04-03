@@ -4,7 +4,9 @@ from pydantic import UUID4
 from sqlalchemy import UUID, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.models import Role as RoleModel, RoleCRUD, UserCRUD, UserTokenVerifyCRUD
+from src.auth.models import (
+    Role as RoleModel, RoleCRUD, User as UserModel, UserCRUD, UserTokenVerify as UserTokenVerifyModel, UserTokenVerifyCRUD
+)
 from src.auth.schemas import RoleResponse
 from src.exceptions import ObjectNotFoundError
 from src.models import get_list, get_by_name
@@ -35,17 +37,17 @@ class Role:
     @classmethod
     async def update(
         cls, session: AsyncSession, role_id: UUID4, **kwargs
-    ) -> RoleResponse:
+    ) -> RoleModel:
         return await cls.crud.update(session, "id", role_id, **kwargs)
 
     @classmethod
-    async def get_list(cls, session: AsyncSession) -> list[RoleResponse]:
+    async def get_list(cls, session: AsyncSession) -> list[RoleModel]:
         return await get_list(session, select(RoleModel))
 
     @classmethod
     async def get_or_create(
         cls, session: AsyncSession, name: str, permission: str
-    ) -> RoleResponse:
+    ) -> RoleModel:
         role = await get_by_name(session, RoleModel, name)
         if role is None:
             return await cls.crud.create(
@@ -60,7 +62,7 @@ class UserTokenVerify:
     @classmethod
     async def get(
         cls, session: AsyncSession, token_verify: str
-    ) -> UserTokenVerifyCRUD:
+    ) -> UserTokenVerifyModel:
         return await cls.crud.get(session, "token_verify", token_verify)
 
     @classmethod
@@ -70,7 +72,7 @@ class UserTokenVerify:
     @classmethod
     async def get_or_create(
         cls, session: AsyncSession, user_id: UUID4, token_verify: str
-    ) -> UserTokenVerifyCRUD:
+    ) -> UserTokenVerifyModel:
         try:
             instance = await cls.crud.get(session, "user_id", user_id)
             instance.token_verify = token_verify
@@ -87,7 +89,7 @@ class User:
     crud = UserCRUD
 
     @classmethod
-    async def get(cls, session: AsyncSession, field: str, value) -> UserCRUD:
+    async def get(cls, session: AsyncSession, field: str, value) -> UserModel:
         return await cls.crud.get(session, field, value)
 
     # @classmethod

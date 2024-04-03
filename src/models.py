@@ -59,10 +59,10 @@ class CRUDBase:
 async def get_list(session: AsyncSession, query: Select) -> list[Table]:
     """
     Метод позволяет получить список объектов.
-    На вход подаются следующие параметры:
-    session - сессия
-    query - запрос в формате sqlalchemy, например:
-    select(User).where(User.name == 'John')
+
+    :param session: сессия
+    :param query: запрос в формате sqlalchemy, например
+        select(User).where(User.name == 'John')
     """
     return (await session.execute(query)).unique().scalars().all()
 
@@ -71,14 +71,12 @@ async def exactly_one(session: AsyncSession, query) -> Optional[Table]:
     """
     Получает одно скалярное значение из результата запроса.
 
-    Параметры:
-    session - сессия
-    query - запрос в формате SQLAlchemy, например:
+    :param session: сессия
+    :param query: запрос в формате SQLAlchemy, например:
     session.query(User).filter(User.name == 'John')
     Вернет пользователя с именем John
 
-    Возвращает:
-    Элемент, соответствующий запросу
+    :return: Элемент, соответствующий запросу
 
     Исключения:
     ObjectNotFoundError - если результат запроса пуст
@@ -129,5 +127,13 @@ async def get_by_name(
 async def get_by_id(
         session: AsyncSession, table: Type[Table], id: str
 ) -> Optional[Table]:
+    """
+    Возвращает объект по полю 'id'.
+
+    :param session: асинхронная сессия
+    :param table: класс sqlalchemy (из файлов models.py)
+    :param id: значение поля 'id'
+    :return: экземпляр класса
+    """
     query = select(table).where(table.id == id)
     return await exactly_one(session, query)

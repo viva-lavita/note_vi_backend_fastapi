@@ -60,6 +60,10 @@ class SummaryImage(Base):
     summary = relationship("Summary", back_populates="images", lazy=False)
 
 
+class SummaryImageCRUD(CRUDBase):
+    table = SummaryImage
+
+
 class Summary(Base):
     __tablename__ = "summary"
 

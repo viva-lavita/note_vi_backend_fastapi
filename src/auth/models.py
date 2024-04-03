@@ -70,6 +70,9 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     role: Mapped["Role"] = relationship(back_populates="users")
     files = relationship("File", back_populates="user")
     summaries = relationship("Summary", back_populates="author")
+    # favorite_notes = relationship("Note",
+    #                               secondary="favorite_notes",
+    #                               back_populates="in_favorites_users")
 
     def __str__(self):
         return f"Person(username={self.username}, email={self.email})"
