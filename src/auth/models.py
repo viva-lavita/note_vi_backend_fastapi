@@ -9,8 +9,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.auth.constants import Permission
 from src.constants import new_uuid
-from src.database import Base
+from src.database import Base, metadata
 from src.models import CRUDBase, MixinID
+from src.notes.models import Note, NoteUser
+from src.summary.models import Summary, SummaryUser
 
 
 class Role(Base):
@@ -68,11 +70,12 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     is_verified: Mapped[bool] = mapped_column(default=False)
 
     role: Mapped["Role"] = relationship(back_populates="users")
-    files = relationship("File", back_populates="user")
-    summaries = relationship("Summary", back_populates="author")
-    # favorite_notes = relationship("Note",
-    #                               secondary="favorite_notes",
-    #                               back_populates="in_favorites_users")
+    summaries: Mapped[list[Summary] | None] = relationship(back_populates="author")
+    notes: Mapped[list[Note] | None] = relationship(back_populates="author")
+    favorite_summaries: Mapped[list[SummaryUser] | None] = relationship(
+        back_populates="user")
+    favorite_notes: Mapped[list[NoteUser] | None] = relationship(
+        back_populates="user")
 
     def __str__(self):
         return f"Person(username={self.username}, email={self.email})"

@@ -3,7 +3,7 @@ from typing import Mapping
 from uuid import UUID
 
 from fastapi import (
-    APIRouter, Depends, HTTPException, Request, status,
+    APIRouter, Depends, HTTPException, Request, Response, status,
     UploadFile, File
 )
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,13 +18,18 @@ from src.summary.utils import (
     save_file, secure_filename
 )
 from src.database import get_async_session
-from src.summary.constants import FilesNotFoundError, SummaryNotFoundError
+from src.summary.constants import FilesNotFoundError, SummaryNotFoundError, SummaryUserNotFoundError
 from src.summary.dependencies import (
     valid_image_id_obj, valid_summary_id, valid_summary_id_obj,
     valid_user_id, valid_username
 )
-from src.summary.logic import Summary as SummaryLogic, SummaryImage as SummaryImageLogic
-from src.summary.schemas import Summary as SummarySchema, SummaryUpdate
+from src.summary.logic import (
+    Summary, SummaryImage,
+    SummaryUser
+)
+from src.summary.schemas import (
+    ShortSummary, Summary as SummarySchema, SummaryUpdate, SummaryUser as SummaryUserSchema
+)
 
 
 logger = logging.getLogger('root')
@@ -34,7 +39,7 @@ router_summary = APIRouter(prefix='/summary', tags=['summary'])
 
 # TODO: файл сохраняется с новым названием
 # TODO: новое название делаем путем пропуска старого названия через функцию безопасной обработки
-# TODO: старое название сохраняем к файлу в таблицу File в поле name (потом понадобиться в случае восстановления)
+# TODO: старое название сохраняем к файлу в таблицу File в поле name (потом понадобиться также в случае восстановления)
 # TODO: путь к новому файлу(включая новое название + относительный главной папке путь) сохраняем в таблицу File в поле path
 
 
@@ -60,7 +65,7 @@ async def upload_summary(
         filename = get_filename(safe_filename, user.id, 'summary')
         file_path = get_file_path(filename, user.id, 'summary')
         try:
-            new_summary = await SummaryLogic.create(
+            new_summary = await Summary.create(
                 session,
                 name=file.filename,
                 summary_path=file_path,
@@ -68,7 +73,9 @@ async def upload_summary(
                 is_public=all_public
             )
             await session.commit()
-            await SummaryLogic.get(session, new_summary.id)
+            # Если в бд был создан экземпляр
+            await Summary.get(session, new_summary.id)
+            # загружаем файл
             await save_file(file, filename, user.id, 'summary')
 
         except Exception as e:
@@ -79,6 +86,18 @@ async def upload_summary(
             )
 
     return {'message': 'Файлы успешно загружены'}
+
+
+@router_summary.get('/favorites')
+async def get_favorite_summaries(
+    user: User = Depends(current_active_verified_user),
+    session: AsyncSession = Depends(get_async_session)
+) -> list[ShortSummary]:
+    """
+    Вывод избранных конспектов текущего пользователя.
+    """
+    summaries = await SummaryUser.get_list(session, user.id)
+    return summaries
 
 
 @router_summary.get('/me')
@@ -92,7 +111,7 @@ async def get_summary_me(
 
     Дополнительно можно отфильтровать по is_public.
     """
-    return await SummaryLogic.get_list(session, user.id, is_public)
+    return await Summary.get_list(session, user.id, is_public)
 
 
 @router_summary.get('/{summary_id}')
@@ -105,7 +124,7 @@ async def get_summary_by_id(
     Получение конспекта по id.
     """
     try:
-        summary = await SummaryLogic.get(session, summary_id)
+        summary = await Summary.get(session, summary_id)
         return summary
     except ObjectNotFoundError:
         raise HTTPException(
@@ -134,7 +153,7 @@ async def get_summary(
     параметром.
     Можно комбинировать.
     """
-    summaries = await SummaryLogic.get_list(
+    summaries = await Summary.get_list(
         session, user_id, is_public, username
     )
     if not summaries:
@@ -155,7 +174,7 @@ async def delete_summary(
     """
     Удаление конспекта по id.
     """
-    await SummaryLogic.delete(session, summary_id)
+    await Summary.delete(session, summary_id)
     await session.commit()
 
 
@@ -176,9 +195,9 @@ async def update_summary(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN
         )
-    await SummaryLogic.update(session, summary.id, new_summary)
+    await Summary.update(session, summary.id, new_summary)
     await session.commit()
-    updated_summary = await SummaryLogic.get(session, summary.id)
+    updated_summary = await Summary.get(session, summary.id)
     return updated_summary
 
 
@@ -210,11 +229,11 @@ async def add_images_to_summary(
         filename = get_filename(safe_filename, user.id, 'image')
         file_path = get_file_path(filename, user.id, 'image')
         try:
-            new_image = await SummaryImageLogic.create(
+            new_image = await SummaryImage.create(
                 session, summary.id, file_path
             )
             await session.commit()
-            await SummaryImageLogic.get(session, new_image.id)
+            await SummaryImage.get(session, new_image.id)
             await save_file(file, filename, user.id, 'image')
         except Exception as e:
             logger.exception(e)
@@ -223,7 +242,7 @@ async def add_images_to_summary(
                 detail=str(e)
             )
 
-    return await SummaryLogic.get(session, summary.id)
+    return await Summary.get(session, summary.id)
 
 
 @router_summary.delete('/{summary_id}/images/{image_id}',
@@ -233,7 +252,7 @@ async def delete_image_from_summary(
     image: Mapping = Depends(valid_image_id_obj),
     user: User = Depends(current_active_verified_user),
     session: AsyncSession = Depends(get_async_session)
-):
+) -> None:
     """
     Удаление изображения из конспекта.
     """
@@ -242,6 +261,50 @@ async def delete_image_from_summary(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN
         )
-    await SummaryImageLogic.delete(session, image.id)
+    await SummaryImage.delete(session, image.id)
     await session.commit()
     await delete_file(image.path)
+
+
+@router_summary.get('/{summary_id}/favorite')
+async def add_summary_to_favorite(
+    summary_id: Mapping = Depends(valid_summary_id),
+    user: User = Depends(current_active_verified_user),
+    session: AsyncSession = Depends(get_async_session)
+) -> SummaryUserSchema:
+    """
+    Добавление конспекта в избранное.
+    """
+    new_favorite = await SummaryUser.create(
+        session, summary_id, user.id
+    )
+    if new_favorite is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Конспект уже добавлен в избранное"
+        )
+    await session.commit()
+    return new_favorite
+
+
+@router_summary.delete('/{summary_id}/favorite',
+                       status_code=status.HTTP_204_NO_CONTENT)
+async def delete_summary_from_favorite(
+    summary_id: Mapping = Depends(valid_summary_id),
+    user: User = Depends(current_active_verified_user),
+    session: AsyncSession = Depends(get_async_session)
+) -> None:
+    """
+    Удаление конспекта из избранного.
+    """
+    try:
+        await SummaryUser.get(session, summary_id, user.id)
+    except ObjectNotFoundError:
+        raise HTTPException(
+            status_code=SummaryUserNotFoundError.status_code,
+            detail=SummaryUserNotFoundError.description
+        )
+    await SummaryUser.delete(
+        session, summary_id, user.id
+    )
+    await session.commit()

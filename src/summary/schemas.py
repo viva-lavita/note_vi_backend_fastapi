@@ -5,16 +5,6 @@ from pydantic import UUID4, BaseModel, Field
 from src.auth.schemas import ShortUser
 
 
-class File(BaseModel):
-    id: UUID4
-    name: str
-    path: str
-    user: ShortUser
-
-    class Config:
-        from_attributes = True
-
-
 class SummaryImage(BaseModel):
     id: UUID4
     path: str
@@ -40,3 +30,19 @@ class SummaryUpdate(BaseModel):
 
     # class Config:
     #     from_attributes = True
+
+
+class ShortSummary(BaseModel):
+    id: UUID4
+    name: str
+    summary_path: str
+    author: ShortUser
+
+    class Config:
+        from_attributes = True
+
+
+class SummaryUser(BaseModel):
+    summary_id: UUID4
+    user_id: UUID4
+    created_at: datetime

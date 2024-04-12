@@ -1,43 +1,16 @@
 from uuid import UUID
 
 from pydantic import UUID4
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.models import User
-from src.models import get_list
+from src.models import exactly_one, get_list
 from src.summary.models import (
-    FileCRUD, File as FileModel, SummaryCRUD, Summary as SummaryModel,
-    SummaryImageCRUD, SummaryImage as SummaryImageModel
+    SummaryCRUD, Summary as SummaryModel,
+    SummaryImageCRUD, SummaryImage as SummaryImageModel, SummaryUserCRUD,
+    SummaryUser as SummaryUserModel
 )
-from src.summary.schemas import File as FileSchema, Summary as SummarySchema
-
-
-class File:
-    crud = FileCRUD
-
-    @classmethod
-    async def get(cls, session: AsyncSession, file_id: UUID4) -> FileSchema:
-        return await cls.crud.get(session, "id", file_id)
-
-    @classmethod
-    async def create(cls, session: AsyncSession, **kwargs) -> FileSchema:
-        created_fields = dict(**kwargs)
-        return await cls.crud.create(session, **created_fields)
-
-    @classmethod
-    async def get_list_by_username(
-          cls, session: AsyncSession, username: str) -> list[FileSchema]:
-        query = select(FileModel).join(User).where(User.username == username)
-        return await get_list(session, query)
-
-    @classmethod
-    async def get_list(cls, session: AsyncSession, user_id: UUID = None) -> list[FileSchema]:
-        if user_id is None:
-            query = select(FileModel)
-        else:
-            query = select(FileModel).where(FileModel.user_id == user_id)
-        return await get_list(session, query)
 
 
 class Summary:
@@ -80,16 +53,16 @@ class Summary:
         return await cls.crud.update(
             session, "id", summary_id, **updated_fields)
 
-    # @classmethod
-    # async def add_image(cls, session: AsyncSession, summary_id: UUID4, **kwargs) -> None:
-
 
 class SummaryImage:
     crud = SummaryImageCRUD
 
     @classmethod
-    async def create(cls, session: AsyncSession, summary_id, file_path) -> SummaryImageModel:
-        return await cls.crud.create(session, path=file_path, summary_id=summary_id)
+    async def create(
+        cls, session: AsyncSession, summary_id, file_path
+    ) -> SummaryImageModel:
+        return await cls.crud.create(
+            session, path=file_path, summary_id=summary_id)
 
     @classmethod
     async def get(cls, session: AsyncSession, image_id) -> SummaryImageModel:
@@ -98,3 +71,53 @@ class SummaryImage:
     @classmethod
     async def delete(cls, session: AsyncSession, image_id) -> None:
         await cls.crud.delete(session, "id", image_id)
+
+
+class SummaryUser:
+    crud = SummaryUserCRUD
+
+    @classmethod
+    async def create(
+        cls, session: AsyncSession, summary_id: UUID, user_id: UUID
+    ) -> SummaryUserModel | None:
+        query = (select(SummaryUserModel)
+                 .where((SummaryUserModel.user_id == user_id) &
+                        (SummaryUserModel.summary_id == summary_id)))
+
+        favorite_instance = (await session.execute(query)).first()
+        if favorite_instance:
+            return None
+        return await cls.crud.create(
+            session, summary_id=summary_id, user_id=user_id)
+
+    @classmethod
+    async def delete(
+        cls, session: AsyncSession, summary_id: UUID, user_id: UUID
+    ) -> None:
+        query = delete(SummaryUserModel).where(
+            (SummaryUserModel.user_id == user_id) &
+            (SummaryUserModel.summary_id == summary_id)
+        )
+        await session.execute(query)
+        await session.flush()
+
+    @classmethod
+    async def get(
+        cls, session: AsyncSession, summary_id: UUID, user_id: UUID
+    ) -> SummaryUserModel | None:
+        query = select(SummaryUserModel).where(
+            (SummaryUserModel.user_id == user_id) &
+            (SummaryUserModel.summary_id == summary_id)
+        )
+        return await exactly_one(session, query)
+
+    @classmethod
+    async def get_list(
+        cls, session: AsyncSession, user_id: UUID
+    ) -> list[SummaryModel]:
+        query = (select(SummaryModel)
+                 .join(SummaryUserModel,
+                       SummaryUserModel.summary_id == SummaryModel.id)
+                 .where(SummaryUserModel.user_id == user_id)
+        ).order_by(SummaryUserModel.created_at.desc())
+        return await get_list(session, query)

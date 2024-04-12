@@ -13,7 +13,6 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 from src.config import config
-# from src.auth.models import User
 
 
 class DatetimeAwareJSONEncoder(json.JSONEncoder):

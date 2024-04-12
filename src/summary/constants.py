@@ -11,3 +11,8 @@ class SummaryNotFoundError(Exception):
 class ImageNotFoundError(Exception):
     status_code = 404
     description = "Изображения не найдены"
+
+
+class SummaryUserNotFoundError(Exception):
+    status_code = 404
+    description = "Конспект не найден в избранном"

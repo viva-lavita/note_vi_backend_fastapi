@@ -12,6 +12,7 @@ from src.constants import get_project_root
 
 logger = logging.getLogger('root')
 
+
 def get_dir_path(user_id: UUID, type: str = "other") -> str:
     """
     Возвращает абсолютный путь к файлу(директории).

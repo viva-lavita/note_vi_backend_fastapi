@@ -1,50 +1,39 @@
 from datetime import datetime
-from enum import Enum
 import uuid
 
-from sqlalchemy import (TIMESTAMP, UUID, Boolean, ForeignKey,
-                        String, text)
+from sqlalchemy import (TIMESTAMP, UUID, Boolean, Column, ForeignKey,
+                        String, Table, text)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.constants import new_uuid
-from src.database import Base
+from src.database import Base, metadata
 from src.models import CRUDBase, MixinID
 
 
-# class TypeFile(str, Enum):
-#     summary = "summary"
-#     image = "image"
-#     avatar = "avatar"
-#     other = "other"
+# summary_users = Table(
+#     "summary_users",
+#     metadata,
+#     Column("user_id", UUID, ForeignKey("user.id", ondelete="CASCADE"), primary_key=True),
+#     Column("summary_id", UUID, ForeignKey("summary.id", ondelete="CASCADE"), primary_key=True)
+# )
 
+class SummaryUser(Base):
+    __tablename__ = "summary_user"
 
-class File(Base):
-    __tablename__ = "file"
-
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_uuid)
-    name: Mapped[str]
-    path: Mapped[str] = mapped_column(unique=True)
-    created_at: Mapped[datetime] = mapped_column(
-        server_default=text("TIMEZONE('utc', now())"))
-    # type: Mapped[TypeFile] = mapped_column(default=TypeFile.other)
     user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("user.id", ondelete="CASCADE"))
+        ForeignKey("user.id", ondelete="CASCADE"), primary_key=True)
+    summary_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("summary.id", ondelete="CASCADE"), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    user = relationship("User", back_populates="files", lazy=False)
-
-    def __str__(self):
-        return f"File(name={self.name}, path={self.path})"
-
-    def __repr__(self):
-        return (
-            f"File(id={self.id!r}, "
-            f"name={self.name!r}, "
-            f"path={self.path!r})"
-        )
+    summary = relationship(
+        "Summary", back_populates="favorite_users", lazy=False)
+    user = relationship(
+        "User", back_populates="favorite_summaries", lazy=False)
 
 
-class FileCRUD(CRUDBase):
-    table = File
+class SummaryUserCRUD(CRUDBase):
+    table = SummaryUser
 
 
 class SummaryImage(Base):
@@ -59,6 +48,15 @@ class SummaryImage(Base):
 
     summary = relationship("Summary", back_populates="images", lazy=False)
 
+    def __str__(self):
+        return f"SummaryImage(path={self.path})"
+
+    def __repr__(self):
+        return (
+            f"SummaryImage(id={self.id!r}, "
+            f"path={self.path!r})"
+        )
+
 
 class SummaryImageCRUD(CRUDBase):
     table = SummaryImage
@@ -69,7 +67,7 @@ class Summary(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_uuid)
     name: Mapped[str] = mapped_column(String(256), default='Not name')
-    summary_path: Mapped[str]
+    summary_path: Mapped[str] = mapped_column(String, unique=True)
     images: Mapped[list[SummaryImage] | None] = relationship(
         back_populates="summary",
         cascade="all, delete-orphan",
@@ -79,10 +77,14 @@ class Summary(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         default=datetime.utcnow, onupdate=datetime.utcnow)
-    author_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("user.id", ondelete="CASCADE"))
+    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id",
+                                                            ondelete="CASCADE"))
 
     author = relationship("User", back_populates="summaries", lazy=False)
+    favorite_users = relationship(
+        "SummaryUser",
+        back_populates="summary"
+    )
 
 
 class SummaryCRUD(CRUDBase):

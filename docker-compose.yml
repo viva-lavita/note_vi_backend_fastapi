@@ -1,6 +1,18 @@
 version: '3.8'
 
 services:
+  app_db:
+    container_name: app_db
+    hostname: app_db
+    image: postgres:13.2
+    env_file:
+      - .env.dev
+    volumes:
+      - app_pg_data:/var/lib/postgresql/data
+      - app_pg_data_backups:/backups
+      - /note_vi_backend/scripts/postgres:/scripts
+    ports:
+      - "65432:5432"
   app:
     container_name: app
     image: note_vi_image
@@ -18,19 +30,6 @@ services:
       - app_db
       - redis
     restart: always
-
-  app_db:
-    container_name: app_db
-    hostname: app_db
-    image: postgres:13.2
-    env_file:
-      - .env.dev
-    volumes:
-      - app_pg_data:/var/lib/postgresql/data
-      - app_pg_data_backups:/backups
-      - /note_vi_backend/scripts/postgres:/scripts
-    ports:
-      - "65432:5432"
   
   pgadmin:
     image: dpage/pgadmin4
@@ -65,6 +64,7 @@ services:
     command: ["/note_vi_backend/scripts/docker/celery.sh", "celery"]
     depends_on:
       - redis
+      - app
     restart: always
   
   flower:
@@ -75,7 +75,6 @@ services:
     container_name: flower_app
     command: ["/note_vi_backend/scripts/docker/celery.sh", "flower"]
     depends_on:
-      - redis
       - celery
     restart: always
     ports:

@@ -6,16 +6,27 @@ from sqlalchemy import (TIMESTAMP, UUID, Boolean, Column, ForeignKey,
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.constants import new_uuid
-from src.database import Base
+from src.database import Base, metadata
 from src.models import CRUDBase
 
 
-favorite_notes = Table(
-    "favorite_notes",
-    Base.metadata,
-    Column("user_id", UUID, ForeignKey("user.id", ondelete="CASCADE")),
-    Column("note_id", UUID, ForeignKey("note.id", ondelete="CASCADE"))
-)
+# user_notes = Table(
+#     "favorite_notes",
+#     metadata,
+#     Column("user_id", UUID, ForeignKey("user.id", ondelete="CASCADE"), primary_key=True),
+#     Column("note_id", UUID, ForeignKey("note.id", ondelete="CASCADE"), primary_key=True)
+# )
+
+
+class NoteUser(Base):
+    __tablename__ = "note_user"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), primary_key=True)
+    note_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("note.id", ondelete="CASCADE"), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    note = relationship("Note", back_populates="favorite_users", lazy=False)
+    user = relationship("User", back_populates="favorite_notes", lazy=False)
 
 
 class ImageNote(Base):
@@ -28,6 +39,10 @@ class ImageNote(Base):
                                                           ondelete="CASCADE"))
 
     note = relationship("Note", back_populates="images", lazy=False)
+
+
+class ImageNoteCRUD(CRUDBase):
+    table = ImageNote
 
 
 class Note(Base):
@@ -45,10 +60,9 @@ class Note(Base):
                                                             ondelete="CASCADE"))
 
     author = relationship("User", back_populates="notes", lazy=False)
-    in_favorites_users = relationship(
-        "User",
-        secondary="favorite_notes",
-        back_populates="favorite_notes",
+    favorite_users= relationship(
+        "NoteUser",
+        back_populates="note",
     )
     images: Mapped[list[ImageNote] | None] = relationship(
         back_populates="note",

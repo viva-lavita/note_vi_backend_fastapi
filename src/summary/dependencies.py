@@ -103,6 +103,7 @@ async def valid_summary_id_obj(
             detail=str(e)
         )
 
+
 async def valid_image_id_obj(
         image_id: UUID4,
         session: AsyncSession = Depends(get_async_session)
